@@ -4,7 +4,10 @@ const School = require('../models/School');
 const { getConnection } = require('../utils/dbManager');
 const createSchoolUserModel = require('../models/SchoolUser');
 
-const JWT_SECRET = process.env.JWT_SECRET || '';
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  throw new Error('JWT_SECRET must be defined in your environment variables');
+}
 
 // Middleware for checking if a user is authenticated via session
 function isLoggedIn(req, res, next) {

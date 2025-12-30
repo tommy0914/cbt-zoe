@@ -31,10 +31,17 @@ app.use(cors({
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
+const SESSION_SECRET = process.env.SESSION_SECRET;
+if (!SESSION_SECRET) {
+  throw new Error('SESSION_SECRET must be defined in your environment variables');
+}
+
+// ...
+
 // Session middleware for passport
 app.use(
   session({
-    secret: process.env.SESSION_SECRET || '',
+    secret: SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
   })
