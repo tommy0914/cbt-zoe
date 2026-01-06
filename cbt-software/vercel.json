@@ -1,25 +1,27 @@
 {
+  "version": 2,
   "builds": [
-    {
-      "src": "frontend/cbt-admin-frontend/package.json",
-      "use": "@vercel/static-build",
-      "options": {
-        "distDir": "dist"
-      }
-    },
     {
       "src": "backend/server.js",
       "use": "@vercel/node"
-    }
-  ],
-  "rewrites": [
-    {
-      "source": "/api/(.*)",
-      "destination": "/backend/server.js"
     },
     {
-      "source": "/(.*)",
-      "destination": "/frontend/cbt-admin-frontend/dist/index.html"
+      "src": "frontend/cbt-admin-frontend/package.json",
+      "use": "@vercel/static-build",
+      "options": { "distDir": "dist" }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/backend/server.js"
+    },
+    {
+      "handle": "filesystem"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
     }
   ]
 }
