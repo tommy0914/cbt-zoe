@@ -25,7 +25,7 @@ const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/cbt-softwa
 
 // Middleware (cors + body parsers)
 app.use(cors({
-  origin: 'http://localhost:5173',
+  origin: true, // Allow all origins
   credentials: true
 }));
 app.use(express.json({ limit: '50mb' }));
@@ -62,17 +62,15 @@ mongoose
 app.use(auditMiddleware);
 
 app.use('/api/auth', authRoute);
-// app.use('/api/schools', schoolsRoute);
-// app.use('/api/questions', questionsRoute);
-// app.use('/api/tests', testRoute);
-// app.use('/api/reports', reportsRoute);
-// app.use('/api/classes', classesRoute);
-// app.use('/api/users', usersRoute);
-// app.use('/api/admin', adminRoute);
+app.use('/api/schools', schoolsRoute);
+app.use('/api/questions', questionsRoute);
+app.use('/api/tests', testRoute);
+app.use('/api/reports', reportsRoute);
+app.use('/api/classes', classesRoute);
+app.use('/api/users', usersRoute);
+app.use('/api/admin', adminRoute);
 
 // Health check
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+module.exports = app;
