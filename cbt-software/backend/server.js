@@ -73,4 +73,6 @@ app.use('/api/admin', adminRoute);
 // Health check
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 
-module.exports = app;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
