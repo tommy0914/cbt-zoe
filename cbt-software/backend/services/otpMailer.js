@@ -1,25 +1,25 @@
-// Simple OTP mailer service using SendGrid (optional)
-// If SENDGRID_API_KEY and FROM_EMAIL are set, this will send real emails.
+// Simple OTP mailer service using Brevo (optional)
+// If BREVO_API_KEY and FROM_EMAIL are set, this will send real emails.
 // Otherwise it will fall back to logging the OTP to the console.
-let sgMail = null;
-try {
-  // optional dependency — if not installed, we'll fall back to dev logging
+const nodemailer = require('nodemailer');
+const NodemailerSendinblueTransport = require('nodemailer-sendinblue-transport');
 
-  sgMail = require('@sendgrid/mail');
-} catch (_error) {
-  sgMail = null;
-}
-
-const SENDGRID_KEY = process.env.SENDGRID_API_KEY;
+const BREVO_KEY = process.env.BREVO_API_KEY;
 const FROM_EMAIL = process.env.FROM_EMAIL || 'no-reply@youngemeritus.com';
 
+let transporter;
 let enabled = false;
-if (SENDGRID_KEY && sgMail) {
+
+if (BREVO_KEY) {
   try {
-    sgMail.setApiKey(SENDGRID_KEY);
+    transporter = nodemailer.createTransport(
+      new NodemailerSendinblueTransport({
+        apiKey: BREVO_KEY,
+      })
+    );
     enabled = true;
   } catch (err) {
-    console.warn('SendGrid not configured correctly:', err.message);
+    console.warn('Brevo not configured correctly:', err.message);
     enabled = false;
   }
 }
@@ -43,7 +43,7 @@ async function sendOtpEmail(to, otp, registrationId, expiresAt) {
   };
 
   try {
-    await sgMail.send(msg);
+    await transporter.sendMail(msg);
     return { success: true };
   } catch (err) {
     console.error('Failed to send OTP email:', err);
