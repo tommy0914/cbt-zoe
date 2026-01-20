@@ -11,36 +11,39 @@ export const AuthProvider = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check if the user is already authenticated on mount
-    const checkUser = async () => {
-      try {
-        const data = await api.get('/api/auth/me');
-        if (data.id) {
-          setUser(data);
+    try {
+      const auth = localStorage.getItem('auth');
+      if (auth) {
+        const { user, token } = JSON.parse(auth);
+        if (user && token) {
+          setUser(user);
           setIsAuthenticated(true);
         }
-      } catch (error) {
-        // Not authenticated
-        console.log('Not authenticated');
-      } finally {
-        setIsLoading(false);
       }
-    };
-    checkUser();
+    } catch (error) {
+      console.error('Failed to parse auth from localStorage', error);
+      localStorage.removeItem('auth');
+    }
+    setIsLoading(false);
   }, []);
 
-  const login = (userData) => {
-    setUser(userData);
+  const login = (authData) => {
+    localStorage.setItem('auth', JSON.stringify(authData));
+    setUser(authData.user);
     setIsAuthenticated(true);
   };
 
   const logout = async () => {
     try {
-      await api.post('/api/auth/logout');
+      // Still call the backend logout for any server-side session cleanup
+      await api.post('/api/auth/logout'); 
+    } catch (error) {
+      console.error('Server logout failed:', error);
+    } finally {
+      // Always clear client-side auth state
+      localStorage.removeItem('auth');
       setUser(null);
       setIsAuthenticated(false);
-    } catch (error) {
-      console.error('Logout failed:', error);
     }
   };
 

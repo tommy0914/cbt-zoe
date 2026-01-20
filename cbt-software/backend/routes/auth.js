@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const passport = require('passport');
+const jwt = require('jsonwebtoken');
 const User = require('../models/User'); // Central User model
 
 // --- Google OAuth Routes (Session-based) ---
@@ -48,27 +49,43 @@ router.post('/logout', (req, res, next) => {
   });
 });
 
-// --- Local Login / Registration (Session-based) ---
+// ... (rest of the file is the same until the login route)
 
-// Login uses the central User model and creates a session
+// --- Local Login / Registration (Token-based) ---
+
+// Login uses the central User model and returns a JWT
 router.post('/login', (req, res, next) => {
-  passport.authenticate('local', (err, user, info) => {
+  passport.authenticate('local', { session: false }, (err, user, info) => {
     if (err) {
       return next(err);
     }
     if (!user) {
       return res.status(401).json({ message: info.message || 'Login failed' });
     }
-    req.logIn(user, (err) => {
-      if (err) {
-        return next(err);
-      }
-      return res.json({
+    
+    // Create JWT payload
+    const payload = {
+      userId: user._id,
+      email: user.email,
+      name: user.name,
+      schools: user.schools.map(s => ({ schoolId: s.schoolId, role: s.role }))
+    };
+
+    // Sign the token
+    const secret = process.env.JWT_SECRET || 'your_super_secret_jwt_key_for_development';
+    if (secret === 'your_super_secret_jwt_key_for_development') {
+      console.warn('Warning: Using fallback JWT secret. Please set a strong JWT_SECRET in your .env file for production.');
+    }
+    const token = jwt.sign(payload, secret, { expiresIn: '1d' });
+
+    return res.json({
+      token,
+      user: {
         id: user._id,
         name: user.name,
         email: user.email,
-        schools: user.schools,
-      });
+        schools: user.schools
+      }
     });
   })(req, res, next);
 });
@@ -94,17 +111,28 @@ router.post('/register', async (req, res, next) => {
 
     await newUser.save();
 
-    // Automatically log in the user after registration
-    req.login(newUser, (err) => {
-      if (err) {
-        return next(err);
-      }
-      return res.status(201).json({
+    // Automatically log in the user by generating a JWT
+    const payload = {
+      userId: newUser._id,
+      email: newUser.email,
+      name: newUser.name,
+      schools: newUser.schools.map(s => ({ schoolId: s.schoolId, role: s.role }))
+    };
+
+    const secret = process.env.JWT_SECRET || 'your_super_secret_jwt_key_for_development';
+    if (secret === 'your_super_secret_jwt_key_for_development') {
+      console.warn('Warning: Using fallback JWT secret. Please set a strong JWT_SECRET in your .env file for production.');
+    }
+    const token = jwt.sign(payload, secret, { expiresIn: '1d' });
+
+    return res.status(201).json({
+      token,
+      user: {
         id: newUser._id,
         name: newUser.name,
         email: newUser.email,
-        schools: newUser.schools,
-      });
+        schools: newUser.schools
+      }
     });
   } catch (err) {
     console.error('Registration error:', err);

@@ -14,10 +14,18 @@ export default function Signup() {
   const handleSignup = async (e) => {
     e.preventDefault();
     setError(null);
+    if (!name || !email || !password) {
+      setError('All fields are required.');
+      return;
+    }
     setLoading(true);
     try {
-      const user = await api.post('/api/auth/register', { name, email, password });
-      login(user); // Update the auth context
+      const authData = await api.post('/api/auth/register', { name, email, password });
+      if (authData.token) {
+        login(authData); // Update the auth context with the full auth object
+      } else {
+        setError(authData.message || 'Signup failed: No token received.');
+      }
     } catch (err) {
       setError(err.message || 'An error occurred during signup.');
     } finally {

@@ -13,9 +13,17 @@ export default function ProtectedRoute({ allowedRoles, children }) {
     return <Navigate to="/login" replace />;
   }
 
-  if (allowedRoles && Array.isArray(allowedRoles)) {
-    if (!user || !allowedRoles.includes(user.role)) {
-      return <div className="card">Not authorized to access this page.</div>;
+  if (allowedRoles && Array.isArray(allowedRoles) && allowedRoles.length > 0) {
+    const hasPermission = user?.schools?.some(school => allowedRoles.includes(school.role));
+
+    if (!hasPermission) {
+      return (
+        <div className="card">
+          <h1>Not Authorized</h1>
+          <p>You do not have the required permissions to view this page.</p>
+          <Navigate to="/" />
+        </div>
+      );
     }
   }
   return children;

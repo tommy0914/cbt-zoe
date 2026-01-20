@@ -25,8 +25,12 @@ export default function Login() {
     if (!email || !password) return setMsg('Email and password are required');
     setLoading(true);
     try {
-      const user = await api.post('/api/auth/login', { email, password });
-      login(user);
+      const authData = await api.post('/api/auth/login', { email, password });
+      if (authData.token) {
+        login(authData);
+      } else {
+        setMsg(authData.message || 'Login failed: no token received');
+      }
     } catch (err) {
       setMsg(err.message || 'Login failed. Please check your credentials.');
     } finally {
