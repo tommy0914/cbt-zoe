@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from 'react'
 import api from '../services/api'
 import UserSearch from '../components/UserSearch'
+import Announcements from '../components/Announcements'
+import Leaderboard from '../components/Leaderboard'
+import ExportResults from '../components/ExportResults'
 
 export default function TeacherClasses() {
   const token = JSON.parse(localStorage.getItem('auth'))?.token;
@@ -9,6 +12,7 @@ export default function TeacherClasses() {
   const [enrollmentRequests, setEnrollmentRequests] = useState([])
   const [showRequests, setShowRequests] = useState(false)
   const [requestsLoading, setRequestsLoading] = useState(false)
+  const [selectedClass, setSelectedClass] = useState(null)
 
   useEffect(() => { 
     fetchClasses()
@@ -132,22 +136,55 @@ export default function TeacherClasses() {
         </div>
       ) : (
         classes.map(c => (
-          <div key={c._id} className="card" style={{ marginBottom: '16px' }}>
-            <strong>{c.name}</strong>
-            <div style={{ marginTop: 8 }}>
-              Subjects: {(c.subjects || []).join(', ')}
-            </div>
-            <div style={{ marginTop: 8 }}>
-              <strong>Members ({(c.members || []).length}):</strong>
-              <ul>
-                {(c.members || []).map(m => (
-                  <li key={m._id || m}>{m.username || m._id || m} <button onClick={() => removeMember(c._id, m._id || m)} style={{ marginLeft: 8 }}>Remove</button></li>
-                ))}
-              </ul>
-              <div style={{ marginTop: 6 }}>
-                <UserSearch token={token} placeholder="Add member by email" onSelect={(u) => { api.post(`/api/classes/${c._id}/members`, { userId: u._id }, token).then(() => fetchClasses()) }} />
+          <div key={c._id}>
+            <div className="card" style={{ marginBottom: '16px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <strong>{c.name}</strong>
+                  <div style={{ marginTop: 8, fontSize: '13px', color: '#666' }}>
+                    Subjects: {(c.subjects || []).join(', ')}
+                  </div>
+                </div>
+                <button
+                  onClick={() => setSelectedClass(selectedClass === c._id ? null : c._id)}
+                  style={{
+                    background: selectedClass === c._id ? '#667eea' : '#f3f4f6',
+                    color: selectedClass === c._id ? 'white' : '#1f2937',
+                    border: 'none',
+                    padding: '8px 16px',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    fontWeight: '600'
+                  }}
+                >
+                  {selectedClass === c._id ? 'Hide Details' : 'View Details'}
+                </button>
               </div>
+
+              {selectedClass !== c._id && (
+                <div style={{ marginTop: 8 }}>
+                  <strong>Members ({(c.members || []).length}):</strong>
+                  <ul>
+                    {(c.members || []).map(m => (
+                      <li key={m._id || m}>{m.username || m._id || m} <button onClick={() => removeMember(c._id, m._id || m)} style={{ marginLeft: 8 }}>Remove</button></li>
+                    ))}
+                  </ul>
+                  <div style={{ marginTop: 6 }}>
+                    <UserSearch token={token} placeholder="Add member by email" onSelect={(u) => { api.post(`/api/classes/${c._id}/members`, { userId: u._id }, token).then(() => fetchClasses()) }} />
+                  </div>
+                </div>
+              )}
             </div>
+
+            {selectedClass === c._id && (
+              <div>
+                <Announcements classId={c._id} isTeacher={true} />
+                <Leaderboard classId={c._id} />
+                <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+                  <ExportResults classId={c._id} type="leaderboard" />
+                </div>
+              </div>
+            )}
           </div>
         ))
       )}

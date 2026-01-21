@@ -1,6 +1,7 @@
 import React, { useState, useEffect, lazy, Suspense } from 'react';
 import api from '../services/api';
 import UserSearch from '../components/UserSearch';
+import ExportResults from '../components/ExportResults';
 
 // Lazy load heavy components
 const QuestionForm = lazy(() => import('../components/QuestionForm'));
@@ -14,6 +15,7 @@ function AdminDashboard() {
   const token = JSON.parse(localStorage.getItem('auth'))?.token;
   const [overall, setOverall] = useState(null);
   const [classes, setClasses] = useState([]);
+  const [selectedClassForExport, setSelectedClassForExport] = useState(null);
   const [newClassName, setNewClassName] = useState('');
   const [newClassSubjects, setNewClassSubjects] = useState('');
   const [difficulty, setDifficulty] = useState(null);
@@ -241,10 +243,21 @@ function AdminDashboard() {
             <div key={c._id} className="card" style={{ marginBottom: 8 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <div><strong>{c.name}</strong></div>
-                <div>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button onClick={() => setSelectedClassForExport(selectedClassForExport === c._id ? null : c._id)} style={{ background: selectedClassForExport === c._id ? '#667eea' : '#f3f4f6', color: selectedClassForExport === c._id ? 'white' : '#1f2937' }}>
+                    {selectedClassForExport === c._id ? 'Hide Export' : 'Export Data'}
+                  </button>
                   <button onClick={() => deleteClass(c._id)} style={{ color: 'red' }}>Delete Class</button>
                 </div>
               </div>
+
+              {selectedClassForExport === c._id && (
+                <div style={{ marginTop: '12px', padding: '12px', background: '#f9fafb', borderRadius: '6px', display: 'flex', gap: '8px' }}>
+                  <ExportResults classId={c._id} type="leaderboard" />
+                  <ExportResults classId={c._id} type="class-report" />
+                </div>
+              )}
+
               <div style={{ marginTop: 8 }}>
                 Subjects:
                 <ul>

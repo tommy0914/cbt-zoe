@@ -18,6 +18,7 @@ const usersRoute = require('./routes/users');
 const schoolsRoute = require('./routes/schools');
 const adminRoute = require('./routes/admin');
 const enrollmentRoute = require('./routes/enrollment');
+const quickwinsRoute = require('./routes/quickwins');
 const auditMiddleware = require('./middleware/audit');
 
 const app = express();
@@ -71,6 +72,7 @@ app.use('/api/classes', classesRoute);
 app.use('/api/users', usersRoute);
 app.use('/api/admin', adminRoute);
 app.use('/api/enrollment', enrollmentRoute);
+app.use('/api/quickwins', quickwinsRoute);
 
 // Health check
 app.get('/health', (req, res) => res.json({ status: 'ok' }));

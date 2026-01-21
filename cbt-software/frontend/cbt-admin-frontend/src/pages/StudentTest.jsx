@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react'
 import api from '../services/api'
+import Announcements from '../components/Announcements'
+import Leaderboard from '../components/Leaderboard'
+import Certificates from '../components/Certificates'
 
 export default function StudentTest() {
   const token = JSON.parse(localStorage.getItem('auth'))?.token;
@@ -243,6 +246,15 @@ export default function StudentTest() {
           <div>Score: {result.score} / {result.total} ({Math.round(result.percentage)}%)</div>
           <div>Passed: {result.isPassed ? 'Yes' : 'No'}</div>
         </div>
+      )}
+
+      {/* Quick Wins Components */}
+      {selectedClassId && (
+        <>
+          <Announcements classId={selectedClassId} isTeacher={false} />
+          <Leaderboard classId={selectedClassId} studentId={token ? JSON.parse(localStorage.getItem('auth'))?.userId : null} isStudent={true} />
+          <Certificates studentId={token ? JSON.parse(localStorage.getItem('auth'))?.userId : null} isStudent={true} />
+        </>
       )}
     </div>
   )

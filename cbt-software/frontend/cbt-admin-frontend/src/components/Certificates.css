@@ -1,0 +1,263 @@
+.certificates-section {
+  background: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  margin-bottom: 1.5rem;
+}
+
+.certificates-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  border-bottom: 2px solid #e5e7eb;
+  padding-bottom: 1rem;
+}
+
+.certificates-header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  color: #1f2937;
+}
+
+.cert-count {
+  background: #dbeafe;
+  color: #1e40af;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.certificates-loading {
+  text-align: center;
+  padding: 2rem;
+  color: #6b7280;
+}
+
+.no-certificates {
+  text-align: center;
+  padding: 2rem;
+  background: #f9fafb;
+  border-radius: 6px;
+  color: #6b7280;
+}
+
+.no-certificates p {
+  margin: 0 0 0.5rem 0;
+  font-size: 1rem;
+  color: #1f2937;
+}
+
+.certificates-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1.5rem;
+}
+
+.certificate-card {
+  background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+  border: 1px solid #e5e7eb;
+  border-top: 4px solid #3b82f6;
+  border-radius: 8px;
+  padding: 1.5rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.certificate-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+}
+
+.cert-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.cert-icon {
+  font-size: 2rem;
+}
+
+.cert-number {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  font-weight: 600;
+  text-align: right;
+}
+
+.cert-body h4 {
+  margin: 0 0 0.75rem 0;
+  color: #1f2937;
+  font-size: 1rem;
+}
+
+.cert-score {
+  margin: 0.5rem 0;
+  color: #6b7280;
+  font-size: 0.9rem;
+}
+
+.cert-percentage {
+  margin: 0.5rem 0;
+  color: #667eea;
+  font-weight: bold;
+  font-size: 1.25rem;
+}
+
+.cert-date {
+  display: block;
+  margin-top: 0.75rem;
+  color: #9ca3af;
+  font-size: 0.8rem;
+}
+
+.cert-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.btn-download,
+.btn-email {
+  flex: 1;
+  padding: 0.5rem 0.75rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.btn-download {
+  background: #3b82f6;
+  color: white;
+}
+
+.btn-download:hover {
+  background: #2563eb;
+}
+
+.btn-email {
+  background: #10b981;
+  color: white;
+}
+
+.btn-email:hover {
+  background: #059669;
+}
+
+.cert-preview-modal {
+  display: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.cert-preview {
+  background: white;
+  border-radius: 8px;
+  padding: 2rem;
+  max-width: 600px;
+  width: 100%;
+  position: relative;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.close-btn {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: #f3f4f6;
+  border: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  transition: all 0.3s ease;
+}
+
+.close-btn:hover {
+  background: #e5e7eb;
+}
+
+.cert-preview-content {
+  text-align: center;
+  padding: 2rem;
+  border: 2px dashed #e5e7eb;
+  border-radius: 8px;
+  background: #fafbfc;
+}
+
+.cert-preview-content h2 {
+  margin: 0 0 1rem 0;
+  color: #1f2937;
+  font-size: 1.75rem;
+}
+
+.cert-preview-content p {
+  margin: 0.5rem 0;
+  color: #6b7280;
+}
+
+.cert-preview-content h3 {
+  margin: 1rem 0;
+  color: #667eea;
+  font-size: 1.25rem;
+}
+
+.cert-number {
+  font-size: 0.9rem;
+  color: #9ca3af;
+  margin-top: 1.5rem !important;
+}
+
+.cert-date {
+  font-size: 0.9rem;
+  color: #9ca3af;
+}
+
+@media (max-width: 768px) {
+  .certificates-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .cert-preview {
+    padding: 1.5rem;
+  }
+
+  .cert-preview-content {
+    padding: 1rem;
+  }
+}
