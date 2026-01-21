@@ -1,26 +1,28 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import api from '../services/api';
 import UserSearch from '../components/UserSearch';
-import QuestionForm from '../components/QuestionForm';
-import GradingDashboard from '../components/GradingDashboard';
-import AnalyticsDashboard from '../components/AnalyticsDashboard';
-import TestForm from '../components/TestForm';
 
-export default function AdminDashboard({ token }) {
-  const role = localStorage.getItem('role') || null;
+// Lazy load heavy components
+const QuestionForm = lazy(() => import('../components/QuestionForm'));
+const GradingDashboard = lazy(() => import('../components/GradingDashboard'));
+const AnalyticsDashboard = lazy(() => import('../components/AnalyticsDashboard'));
+const TestForm = lazy(() => import('../components/TestForm'));
+const UserManagement = lazy(() => import('../components/UserManagement'));
+const EnrollmentManagement = lazy(() => import('../components/EnrollmentManagement'));
+
+function AdminDashboard() {
+  const token = JSON.parse(localStorage.getItem('auth'))?.token;
   const [overall, setOverall] = useState(null);
   const [classes, setClasses] = useState([]);
   const [newClassName, setNewClassName] = useState('');
-  const [newClassSubjects, setNewClassSubjects] = useState(''); // comma-separated
-  const [userHistory, setUserHistory] = useState(null);
-  const [userId, setUserId] = useState('');
+  const [newClassSubjects, setNewClassSubjects] = useState('');
   const [difficulty, setDifficulty] = useState(null);
-  const [seedInfo, setSeedInfo] = useState(null);
   const [classSubjectInputs, setClassSubjectInputs] = useState({});
   const [showQuestionForm, setShowQuestionForm] = useState(false);
   const [showGradingDashboard, setShowGradingDashboard] = useState(false);
   const [showAnalyticsDashboard, setShowAnalyticsDashboard] = useState(false);
   const [showTestForm, setShowTestForm] = useState(false);
+  const [showEnrollmentManagement, setShowEnrollmentManagement] = useState(false);
   const [tests, setTests] = useState([]);
   const [editingTest, setEditingTest] = useState(null);
 
@@ -43,20 +45,9 @@ export default function AdminDashboard({ token }) {
     setOverall(data);
   }
 
-  async function fetchUser() {
-    if (!userId) return alert('Enter userId');
-    const data = await api.get(`/api/reports/user-history/${userId}`, token);
-    setUserHistory(data);
-  }
-
   async function fetchDifficulty() {
     const data = await api.get('/api/reports/question-difficulty', token);
     setDifficulty(data);
-  }
-
-  async function fetchSeedInfo() {
-    const data = await api.get('/api/tests/seed-info/latest');
-    setSeedInfo(data);
   }
 
   async function fetchClasses() {
@@ -161,6 +152,8 @@ export default function AdminDashboard({ token }) {
     setUploadMsg(res.message || JSON.stringify(res));
   }
 
+  const loadingSuspense = <div className="card">Loading component...</div>;
+
   return (
     <div>
       <h3>🔧 Admin Dashboard</h3>
@@ -175,8 +168,6 @@ export default function AdminDashboard({ token }) {
 
       {overall && <pre>{JSON.stringify(overall, null, 2)}</pre>}
       {difficulty && <pre>{JSON.stringify(difficulty, null, 2)}</pre>}
-      {userHistory && <pre>{JSON.stringify(userHistory, null, 2)}</pre>}
-      {seedInfo && <div style={{ marginTop: 12 }} className="card">Latest seed test: <strong>{seedInfo.testName}</strong><br/>ID: <code>{seedInfo.testId}</code></div>}
       <div style={{ marginTop: 12 }} className="card">
         <h4>📤 Upload Questions</h4>
         <input type="file" accept=".xls,.xlsx,.csv" onChange={e => setFile(e.target.files[0])} />
@@ -189,25 +180,33 @@ export default function AdminDashboard({ token }) {
         <button onClick={() => setShowQuestionForm(!showQuestionForm)}>
           {showQuestionForm ? 'Hide Question Form' : 'Create New Question Manually'}
         </button>
-        {showQuestionForm && <QuestionForm token={token} />}
+        <Suspense fallback={loadingSuspense}>
+          {showQuestionForm && <QuestionForm token={token} />}
+        </Suspense>
       </div>
       <div style={{ marginTop: 12 }}>
         <button onClick={() => setShowGradingDashboard(!showGradingDashboard)}>
           {showGradingDashboard ? 'Hide Grading Dashboard' : 'View Essays for Grading'}
         </button>
-        {showGradingDashboard && <GradingDashboard token={token} />}
+        <Suspense fallback={loadingSuspense}>
+          {showGradingDashboard && <GradingDashboard token={token} />}
+        </Suspense>
       </div>
       <div style={{ marginTop: 12 }}>
         <button onClick={() => setShowAnalyticsDashboard(!showAnalyticsDashboard)}>
           {showAnalyticsDashboard ? 'Hide Analytics' : 'Show Analytics Dashboard'}
         </button>
-        {showAnalyticsDashboard && <AnalyticsDashboard token={token} />}
+        <Suspense fallback={loadingSuspense}>
+          {showAnalyticsDashboard && <AnalyticsDashboard token={token} />}
+        </Suspense>
       </div>
       <div style={{ marginTop: 12 }}>
         <button onClick={() => { setShowTestForm(!showTestForm); setEditingTest(null); }}>
           {showTestForm ? 'Hide Test Form' : 'Create New Test'}
         </button>
-        {showTestForm && <TestForm token={token} test={editingTest} onTestCreated={() => { fetchTests(); setShowTestForm(false); }} onTestUpdated={() => { fetchTests(); setEditingTest(null); setShowTestForm(false); }} />}
+        <Suspense fallback={loadingSuspense}>
+          {showTestForm && <TestForm token={token} test={editingTest} onTestCreated={() => { fetchTests(); setShowTestForm(false); }} onTestUpdated={() => { fetchTests(); setEditingTest(null); setShowTestForm(false); }} />}
+        </Suspense>
       </div>
       <div style={{ marginTop: 12 }} className="card">
         <h4>📝 Tests Management</h4>
@@ -280,6 +279,19 @@ export default function AdminDashboard({ token }) {
           ))}
         </div>
       </div>
+      <div style={{ marginTop: 12 }}>
+        <button onClick={() => setShowEnrollmentManagement(!showEnrollmentManagement)}>
+          {showEnrollmentManagement ? 'Hide Enrollment Management' : 'Manage Student Enrollments'}
+        </button>
+        <Suspense fallback={loadingSuspense}>
+          {showEnrollmentManagement && <EnrollmentManagement />}
+        </Suspense>
+      </div>
+      <Suspense fallback={loadingSuspense}>
+        <UserManagement token={token} />
+      </Suspense>
     </div>
   )
 }
+
+export default AdminDashboard;

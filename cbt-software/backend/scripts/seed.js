@@ -91,6 +91,20 @@ async function seed() {
     console.log('Created admin user in school DB:', adminUsername);
   }
 
+  // Also create a central admin user if one doesn't exist
+  let centralAdmin = await User.findOne({ email: adminUsername });
+  if (!centralAdmin) {
+    centralAdmin = new User({
+      name: 'Central Admin',
+      email: adminUsername,
+      password: 'AdminPass123!',
+      // Assign a default school and role
+      schools: [{ schoolId: school._id, role: 'admin' }],
+    });
+    await centralAdmin.save();
+    console.log('Created admin user in central DB:', adminUsername);
+  }
+
   let student = await SchoolUser.findOne({ username: studentUsername });
   if (!student) {
     student = new SchoolUser({ username: studentUsername, password: 'StudentPass123!', role: 'student' });

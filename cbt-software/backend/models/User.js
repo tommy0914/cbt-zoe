@@ -4,7 +4,7 @@ const bcrypt = require('bcrypt');
 const SALT_ROUNDS = 10;
 
 const SchoolMembershipSchema = new mongoose.Schema({
-  schoolId: { type: mongoose.Schema.Types.ObjectId, ref: 'School', required: true },
+  schoolId: { type: mongoose.Schema.Types.ObjectId, ref: 'School', required: false }, // Allow null for global admins
   role: { type: String, enum: ['admin', 'teacher', 'student'], required: true },
 });
 
@@ -12,25 +12,23 @@ const UserSchema = new mongoose.Schema({
   name: { type: String, required: true },
   email: { type: String, required: true, unique: true },
   username: { type: String, unique: true, sparse: true }, // sparse allows multiple null values
-  googleId: { type: String, unique: true, sparse: true },
-  password: { type: String }, // Not required for OAuth users
+  password: { type: String, required: true },
   schools: [SchoolMembershipSchema],
+  mustChangePassword: { type: Boolean, default: false }, // Flag for first-time password change
+  passwordResetToken: { type: String, default: null },
+  passwordResetExpires: { type: Date, default: null },
   createdAt: { type: Date, default: Date.now },
 });
 
+// Add a compound index on schools for efficient querying
+UserSchema.index({ 'schools.schoolId': 1, 'schools.role': 1 });
+
 // Use an async pre-save hook
-UserSchema.pre('save', async function (next) {
+UserSchema.pre('save', async function () {
   // Only hash the password if it has been modified (or is new) and exists
   if (this.isModified('password') && this.password) {
-    try {
-      const hash = await bcrypt.hash(this.password, SALT_ROUNDS);
-      this.password = hash;
-      next();
-    } catch (err) {
-      next(err);
-    }
-  } else {
-    next();
+    const hash = await bcrypt.hash(this.password, SALT_ROUNDS);
+    this.password = hash;
   }
 });
 

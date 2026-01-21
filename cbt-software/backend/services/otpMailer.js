@@ -51,4 +51,40 @@ async function sendOtpEmail(to, otp, registrationId, expiresAt) {
   }
 }
 
-module.exports = { sendOtpEmail };
+async function sendCredentialsEmail(to, tempPassword, name, schoolName) {
+  const subject = 'Your YoungEmeritus Account Created - Login Details Inside';
+  const html = `
+    <h2>Welcome to YoungEmeritus, ${name}!</h2>
+    <p>Your account has been created at <strong>${schoolName}</strong>.</p>
+    
+    <h3>Your Login Details:</h3>
+    <p><strong>Email:</strong> ${to}</p>
+    <p><strong>Temporary Password:</strong> <code style="background: #f0f0f0; padding: 8px; font-size: 16px; font-weight: bold;">${tempPassword}</code></p>
+    
+    <p><strong>⚠️ Important:</strong> You must change your password on your first login.</p>
+    
+    <p>If you did not request this account, please contact your school administrator.</p>
+  `;
+
+  if (!enabled) {
+    console.log(`(DEV) Credentials sent to ${to}\n  Email: ${to}\n  Temp Password: ${tempPassword}\n  School: ${schoolName}`);
+    return { success: true, dev: true };
+  }
+
+  const msg = {
+    to,
+    from: FROM_EMAIL,
+    subject,
+    html,
+  };
+
+  try {
+    await transporter.sendMail(msg);
+    return { success: true };
+  } catch (err) {
+    console.error('Failed to send credentials email:', err);
+    return { success: false, error: err.message };
+  }
+}
+
+module.exports = { sendOtpEmail, sendCredentialsEmail };

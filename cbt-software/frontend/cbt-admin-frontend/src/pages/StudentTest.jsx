@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react'
 import api from '../services/api'
 
-export default function StudentTest({ token }) {
+export default function StudentTest() {
+  const token = JSON.parse(localStorage.getItem('auth'))?.token;
   const [testId, setTestId] = useState('')
   const [testsList, setTestsList] = useState([])
   const [classesList, setClassesList] = useState([])

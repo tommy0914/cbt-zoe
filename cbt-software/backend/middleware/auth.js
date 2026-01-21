@@ -43,7 +43,11 @@ async function verifyToken(req, res, next) {
     // Otherwise fall back to system user
     const user = await SystemUser.findById(payload.userId).select('-password');
     if (!user) return res.status(401).json({ message: 'User not found' });
-    req.user = user;
+    
+    // Simplification: assign the role from the first school membership
+    const userRole = user.schools.length > 0 ? user.schools[0].role : undefined;
+
+    req.user = { ...user.toObject(), role: userRole };
     next();
   } catch (_error) {
     return res.status(401).json({ message: 'Invalid or expired token' });
@@ -66,6 +70,7 @@ const PERMISSIONS = {
   manage_tests: ['admin', 'teacher'],
   manage_questions: ['admin'],
   manage_users: ['admin'],
+  create_user: ['admin'],
 };
 
 function requirePermission(action) {

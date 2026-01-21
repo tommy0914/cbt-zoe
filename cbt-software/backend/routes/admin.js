@@ -5,7 +5,10 @@ const Audit = require('../models/Audit');
 
 const { body, validationResult } = require('express-validator');
 const User = require('../models/User');
+const School = require('../models/School');
 const { createUser } = require('../services/userService');
+const { generateTemporaryPassword } = require('../services/passwordService');
+const { sendCredentialsEmail } = require('../services/otpMailer');
 
 // Validation chain for creating a teacher
 const validateTeacherCreation = [
@@ -68,12 +71,38 @@ router.post('/students', verifyToken, requirePermission('create_user'), validate
     const { name, email, matricNumber, level } = req.body;
     const schoolId = req.user.schoolId; // Assuming admin's schoolId is in the token
 
+    // Generate temporary password
+    const tempPassword = generateTemporaryPassword();
+
+    // Create user with temporary password and mustChangePassword flag
     const newUser = await createUser(
-      { name, email, password: 'defaultPassword', role: 'student', matricNumber, level }, // Consider a more secure way to handle initial passwords
+      { 
+        name, 
+        email, 
+        password: tempPassword, 
+        role: 'student', 
+        matricNumber, 
+        level,
+        mustChangePassword: true // Force password change on first login
+      },
       schoolId
     );
 
-    res.status(201).json({ message: 'Student created successfully', user: newUser });
+    // Get school name for email
+    const dbManager = require('../utils/dbManager');
+    const db = dbManager.getConnection(schoolId);
+    const School = require('../models/School');
+    const schoolConnection = db ? db.model('School', School.schema) : require('../models/School');
+    const school = await schoolConnection.findById(schoolId);
+    const schoolName = school ? school.name : 'Your School';
+
+    // Send credentials email
+    await sendCredentialsEmail(email, tempPassword, name, schoolName);
+
+    res.status(201).json({ 
+      message: 'Student created successfully. Credentials sent to student email.',
+      user: newUser 
+    });
   } catch (error) {
     res.status(500).json({ message: 'Failed to create student', error: error.message });
   }

@@ -3,55 +3,9 @@ const router = express.Router();
 const passport = require('passport');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User'); // Central User model
+const { verifyToken } = require('../middleware/auth');
 
-// --- Google OAuth Routes (Session-based) ---
-
-// 1. The route to initiate Google login
-router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
-
-// 2. The callback route that Google redirects to after authentication
-router.get(
-  '/google/callback',
-  passport.authenticate('google', {
-    failureRedirect: '/login', // Redirect to your frontend login page on failure
-  }),
-  (req, res) => {
-    // On successful authentication, redirect to a frontend page.
-    // A session cookie is automatically set by passport.
-    res.redirect('/'); // Redirect to the root (handled by App.jsx to go to dashboard)
-  }
-);
-
-// 3. Route to check for a currently logged-in user (relies on the session cookie)
-router.get('/me', (req, res) => {
-  if (req.user) {
-    // req.user is populated by passport if a valid session exists
-    res.json({
-        id: req.user._id,
-        name: req.user.name,
-        email: req.user.email,
-        role: req.user.role,
-        schools: req.user.schools,
-    });
-  } else {
-    res.status(401).json({ message: 'Not authenticated' });
-  }
-});
-
-// 4. Route to log out (destroys the session)
-router.post('/logout', (req, res, next) => {
-  req.logout(function(err) {
-    if (err) { return next(err); }
-    req.session.destroy(() => {
-      res.clearCookie('connect.sid'); // Clears the session cookie
-      res.json({ message: 'Logged out successfully' });
-    });
-  });
-});
-
-// ... (rest of the file is the same until the login route)
-
-// --- Local Login / Registration (Token-based) ---
+// --- Token-based Authentication Routes ---
 
 // Login uses the central User model and returns a JWT
 router.post('/login', (req, res, next) => {
@@ -84,7 +38,8 @@ router.post('/login', (req, res, next) => {
         id: user._id,
         name: user.name,
         email: user.email,
-        schools: user.schools
+        schools: user.schools,
+        mustChangePassword: user.mustChangePassword || false
       }
     });
   })(req, res, next);
@@ -137,6 +92,42 @@ router.post('/register', async (req, res, next) => {
   } catch (err) {
     console.error('Registration error:', err);
     res.status(500).json({ message: 'Failed to register user', error: err.message });
+  }
+});
+
+// Change password - used for first-time password reset and password updates
+router.post('/change-password', verifyToken, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ message: 'Current password and new password are required.' });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ message: 'New password must be at least 6 characters long.' });
+    }
+
+    const user = await User.findById(req.user.userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+
+    // Verify current password
+    const isPasswordValid = await user.comparePassword(currentPassword);
+    if (!isPasswordValid) {
+      return res.status(401).json({ message: 'Current password is incorrect.' });
+    }
+
+    // Update password
+    user.password = newPassword;
+    user.mustChangePassword = false; // Clear the flag after password change
+    await user.save();
+
+    res.json({ message: 'Password changed successfully.' });
+  } catch (err) {
+    console.error('Password change error:', err);
+    res.status(500).json({ message: 'Failed to change password', error: err.message });
   }
 });
 
