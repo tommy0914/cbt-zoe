@@ -1,15 +1,21 @@
 const mongoose = require('mongoose');
 
 const schoolSchema = new mongoose.Schema({
-  name: { type: String, required: true },
-  // Store the database name used for this school's separate database
-  dbName: { type: String, required: true, unique: true },
-  // Store admin reference information from the school's own DB
-  admin: {
-    id: { type: String },
-    username: { type: String },
+  name: {
+    type: String,
+    required: true,
+    unique: true,
   },
-  createdAt: { type: Date, default: Date.now },
+  admin: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true,
+  },
+  superAdmin: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true,
+  },
 });
 
 module.exports = mongoose.model('School', schoolSchema);

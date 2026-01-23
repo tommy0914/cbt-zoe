@@ -3,17 +3,13 @@ const bcrypt = require('bcrypt');
 
 const SALT_ROUNDS = 10;
 
-const SchoolMembershipSchema = new mongoose.Schema({
-  schoolId: { type: mongoose.Schema.Types.ObjectId, ref: 'School', required: false }, // Allow null for global admins
-  role: { type: String, enum: ['admin', 'teacher', 'student'], required: true },
-});
-
 const UserSchema = new mongoose.Schema({
   name: { type: String, required: true },
   email: { type: String, required: true, unique: true },
-  username: { type: String, unique: true, sparse: true }, // sparse allows multiple null values
+  username: { type: String, sparse: true }, // sparse allows multiple null values
   password: { type: String, required: true },
-  schools: [SchoolMembershipSchema],
+  school: { type: mongoose.Schema.Types.ObjectId, ref: 'School', required: false }, // Allow null for global admins
+  role: { type: String, enum: ['admin', 'teacher', 'student', 'superAdmin'], required: true },
   mustChangePassword: { type: Boolean, default: false }, // Flag for first-time password change
   passwordResetToken: { type: String, default: null },
   passwordResetExpires: { type: Date, default: null },
@@ -35,8 +31,7 @@ const UserSchema = new mongoose.Schema({
   updatedAt: { type: Date, default: Date.now },
 });
 
-// Add a compound index on schools for efficient querying
-UserSchema.index({ 'schools.schoolId': 1, 'schools.role': 1 });
+UserSchema.index({ school: 1, role: 1 });
 
 // Use an async pre-save hook
 UserSchema.pre('save', async function () {

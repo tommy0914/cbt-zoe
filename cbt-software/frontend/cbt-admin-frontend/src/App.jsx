@@ -15,6 +15,7 @@ import StudentTest from './pages/StudentTest';
 import AdminDashboard from './pages/AdminDashboard';
 import TeacherClasses from './pages/TeacherClasses';
 import JoinSchool from './pages/JoinSchool';
+import SchoolDashboard from './components/SchoolDashboard';
 
 // Wrapper components for protected routes - these handle auth checks internally
 function ProtectedJoinSchool() {
@@ -31,6 +32,10 @@ function ProtectedAdminDashboard() {
 
 function ProtectedTeacherClasses() {
   return <ProtectedRoute allowedRoles={['admin', 'teacher']}><TeacherClasses /></ProtectedRoute>;
+}
+
+function ProtectedSchoolDashboard() {
+  return <ProtectedRoute allowedRoles={['superAdmin']}><SchoolDashboard /></ProtectedRoute>;
 }
 
 function AppLayout() {
@@ -82,6 +87,7 @@ function AppLayout() {
                     <Link to="/student">Student Test</Link>
                     {(user?.schools?.some(s => s.role === 'admin' || s.role === 'teacher')) && <Link to="/teacher">My Classes</Link>}
                     {(user?.schools?.some(s => s.role === 'admin')) && <Link to="/admin">Admin Dashboard</Link>}
+                    {(user?.role === 'superAdmin') && <Link to="/schools">School Dashboard</Link>}
                     <button onClick={logout} className="logout-btn">
                       Logout
                     </button>
@@ -140,6 +146,7 @@ const router = createBrowserRouter([
       { path: 'student', element: <ProtectedStudentTest /> },
       { path: 'admin', element: <ProtectedAdminDashboard /> },
       { path: 'teacher', element: <ProtectedTeacherClasses /> },
+      { path: 'schools', element: <ProtectedSchoolDashboard /> },
     ],
   },
 ]);
@@ -147,4 +154,3 @@ const router = createBrowserRouter([
 export default function App() {
   return <RouterProvider router={router} />;
 }
-

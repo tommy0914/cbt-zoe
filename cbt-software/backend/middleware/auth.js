@@ -44,14 +44,24 @@ async function verifyToken(req, res, next) {
     const user = await SystemUser.findById(payload.userId).select('-password');
     if (!user) return res.status(401).json({ message: 'User not found' });
     
-    // Simplification: assign the role from the first school membership
-    const userRole = user.schools.length > 0 ? user.schools[0].role : undefined;
+    const userRole = user.role;
 
     req.user = { ...user.toObject(), role: userRole };
     next();
   } catch (_error) {
     return res.status(401).json({ message: 'Invalid or expired token' });
   }
+}
+
+function isAuthenticated(req, res, next) {
+  if (req.isAuthenticated()) {
+    return next();
+  }
+  const authHeader = req.headers['authorization'] || req.headers['Authorization'];
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ message: 'Missing or invalid Authorization header' });
+  }
+  return verifyToken(req, res, next);
 }
 
 function requireRole(roleOrArray) {
@@ -84,4 +94,11 @@ function requirePermission(action) {
   };
 }
 
-module.exports = { isLoggedIn, verifyToken, requireRole, requirePermission, PERMISSIONS };
+function isSuperAdmin(req, res, next) {
+  if (req.user && req.user.role === 'superAdmin') {
+    return next();
+  }
+  res.status(403).json({ message: 'Forbidden: requires superadmin role' });
+}
+
+module.exports = { isLoggedIn, verifyToken, requireRole, requirePermission, PERMISSIONS, isSuperAdmin, isAuthenticated };
