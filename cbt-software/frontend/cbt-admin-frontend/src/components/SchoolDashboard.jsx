@@ -16,8 +16,8 @@ const SchoolDashboard = () => {
           api.get('/schools'),
           api.get('/users'),
         ]);
-        setSchools(schoolsRes.data);
-        setUsers(usersRes.data);
+        setSchools(schoolsRes);
+        setUsers(usersRes);
       } catch (error) {
         console.error('Error fetching data:', error);
       }
@@ -66,7 +66,7 @@ const SchoolDashboard = () => {
       <ul>
         {schools.map((school) => (
           <li key={school._id}>
-            {school.name} (Admin: {school.admin.name})
+            {school.name} (Admin: {users.find(u => u._id === school.admin)?.name})
           </li>
         ))}
       </ul>
