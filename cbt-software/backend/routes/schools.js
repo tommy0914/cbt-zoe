@@ -37,4 +37,14 @@ router.post('/', isAuthenticated, isSuperAdmin, async (req, res) => {
   }
 });
 
+
+router.get('/', isAuthenticated, isSuperAdmin, async (req, res) => {
+  try {
+    const schools = await School.find().populate('admin', 'name email');
+    res.json(schools);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error });
+  }
+});
+
 module.exports = router;

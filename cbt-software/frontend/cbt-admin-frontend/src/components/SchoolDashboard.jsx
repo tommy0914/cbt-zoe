@@ -9,20 +9,29 @@ const SchoolDashboard = () => {
   const [adminId, setAdminId] = useState('');
 
   useEffect(() => {
-    // Fetch schools and users
-    const fetchData = async () => {
+    // Fetch schools
+    const fetchSchools = async () => {
       try {
-        const [schoolsRes, usersRes] = await Promise.all([
-          api.get('/schools'),
-          api.get('/users'),
-        ]);
+        const schoolsRes = await api.get('/schools');
         setSchools(schoolsRes);
-        setUsers(usersRes);
       } catch (error) {
-        console.error('Error fetching data:', error);
+        console.error('Error fetching schools:', error);
       }
     };
-    fetchData();
+    fetchSchools();
+  }, []);
+
+  useEffect(() => {
+    // Fetch users
+    const fetchUsers = async () => {
+      try {
+        const usersRes = await api.get('/users');
+        setUsers(usersRes);
+      } catch (error) {
+        console.error('Error fetching users:', error);
+      }
+    };
+    fetchUsers();
   }, []);
 
   const handleCreateSchool = async (e) => {
@@ -66,7 +75,7 @@ const SchoolDashboard = () => {
       <ul>
         {schools.map((school) => (
           <li key={school._id}>
-            {school.name} (Admin: {users.find(u => u._id === school.admin)?.name})
+            {school.name} (Admin: {school.admin.name})
           </li>
         ))}
       </ul>
