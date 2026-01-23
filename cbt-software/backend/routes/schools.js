@@ -31,7 +31,9 @@ router.post('/', isAuthenticated, isSuperAdmin, async (req, res) => {
     admin.role = 'admin';
     await admin.save();
 
-    res.status(201).json(newSchool);
+    const populatedSchool = await School.findById(newSchool._id).populate('admin', 'name email');
+
+    res.status(201).json(populatedSchool);
   } catch (error) {
     res.status(500).json({ message: 'Server error', error });
   }

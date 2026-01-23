@@ -38,7 +38,7 @@ const SchoolDashboard = () => {
     e.preventDefault();
     try {
       const res = await api.post('/schools', { name: schoolName, adminId });
-      setSchools([...schools, res.data]);
+      setSchools([...schools, res]);
       setSchoolName('');
       setAdminId('');
     } catch (error) {
