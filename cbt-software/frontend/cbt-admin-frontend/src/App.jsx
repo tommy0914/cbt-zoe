@@ -6,7 +6,7 @@ import YoungEmeritusLogo from './components/YoungEmeritusLogo';
 import ChangePassword from './components/ChangePassword';
 
 // Lazy load pages that don't need wrapping
-const Login = lazy(() => import('./pages/Login'));
+const SecureLogin = lazy(() => import('./pages/SecureLogin'));
 const Signup = lazy(() => import('./pages/Signup'));
 const Landing = lazy(() => import('./pages/Landing'));
 
@@ -134,7 +134,7 @@ const router = createBrowserRouter([
     children: [
       { index: true, element: <Landing /> },
       { path: 'landing', element: <Landing /> },
-      { path: 'login', element: <Login /> },
+      { path: 'login', element: <SecureLogin /> },
       { path: 'signup', element: <Signup /> },
       { path: 'join-school', element: <ProtectedJoinSchool /> },
       { path: 'student', element: <ProtectedStudentTest /> },

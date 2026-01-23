@@ -4,6 +4,7 @@ import UserSearch from '../components/UserSearch'
 import Announcements from '../components/Announcements'
 import Leaderboard from '../components/Leaderboard'
 import ExportResults from '../components/ExportResults'
+import StudentResults from '../components/StudentResults'
 
 export default function TeacherClasses() {
   const token = JSON.parse(localStorage.getItem('auth'))?.token;
@@ -13,6 +14,7 @@ export default function TeacherClasses() {
   const [showRequests, setShowRequests] = useState(false)
   const [requestsLoading, setRequestsLoading] = useState(false)
   const [selectedClass, setSelectedClass] = useState(null)
+  const [showStudentResults, setShowStudentResults] = useState(null)
 
   useEffect(() => { 
     fetchClasses()
@@ -183,10 +185,35 @@ export default function TeacherClasses() {
                 <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
                   <ExportResults classId={c._id} type="leaderboard" />
                 </div>
+                <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+                  <button
+                    onClick={() => setShowStudentResults(c._id)}
+                    style={{
+                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                      color: 'white',
+                      border: 'none',
+                      padding: '10px 24px',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      fontWeight: '600',
+                      fontSize: '14px'
+                    }}
+                  >
+                    📊 Generate Student Results
+                  </button>
+                </div>
               </div>
             )}
           </div>
         ))
+      )}
+
+      {showStudentResults && (
+        <StudentResults
+          classId={showStudentResults}
+          className={classes.find(c => c._id === showStudentResults)?.name || 'Class'}
+          onClose={() => setShowStudentResults(null)}
+        />
       )}
     </div>
   )

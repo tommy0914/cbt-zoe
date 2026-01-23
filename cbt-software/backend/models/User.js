@@ -17,7 +17,22 @@ const UserSchema = new mongoose.Schema({
   mustChangePassword: { type: Boolean, default: false }, // Flag for first-time password change
   passwordResetToken: { type: String, default: null },
   passwordResetExpires: { type: Date, default: null },
+  
+  // Security Fields
+  loginAttempts: { type: Number, default: 0 }, // Track failed login attempts
+  lockUntil: { type: Date, default: null }, // Account locked until this time
+  lastLogin: { type: Date, default: null }, // Last successful login
+  lastLoginIP: { type: String, default: null }, // Last login IP address
+  lastLogout: { type: Date, default: null }, // Last logout time
+  passwordChangedAt: { type: Date, default: null }, // When password was last changed
+  twoFactorEnabled: { type: Boolean, default: false }, // 2FA status
+  twoFactorSecret: { type: String, default: null }, // 2FA secret (encrypted)
+  isActive: { type: Boolean, default: true }, // Account active status
+  isEmailVerified: { type: Boolean, default: false }, // Email verification status
+  emailVerificationToken: { type: String, default: null }, // Email verification token
+  
   createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
 });
 
 // Add a compound index on schools for efficient querying

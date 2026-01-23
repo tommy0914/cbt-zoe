@@ -11,7 +11,6 @@ require('./services/passport-setup');
 
 const questionsRoute = require('./routes/questions');
 const testRoute = require('./routes/test');
-const authRoute = require('./routes/auth');
 const reportsRoute = require('./routes/reports');
 const classesRoute = require('./routes/classes');
 const usersRoute = require('./routes/users');
@@ -63,7 +62,9 @@ mongoose
 // Audit middleware logs request/response activity to the system Audit collection
 app.use(auditMiddleware);
 
-app.use('/api/auth', authRoute);
+// Use secure auth routes with enhanced security features
+const authSecureRoute = require('./routes/auth-secure');
+app.use('/api/auth', authSecureRoute);
 app.use('/api/schools', schoolsRoute);
 app.use('/api/questions', questionsRoute);
 app.use('/api/tests', testRoute);
