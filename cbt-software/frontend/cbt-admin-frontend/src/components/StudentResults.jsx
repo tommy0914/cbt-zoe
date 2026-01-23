@@ -263,10 +263,6 @@ const StudentResults = ({ classId, className, onClose }) => {
       setGenerating(false);
     }
   };
-      console.error('Error deleting result:', error);
-      setMessage('Failed to delete result');
-    }
-  };
 
   // Filter results based on grade
   const filteredResults = filterGrade === 'all'

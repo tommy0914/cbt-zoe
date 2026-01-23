@@ -9,6 +9,10 @@ const UserSchema = new mongoose.Schema({
   username: { type: String, sparse: true }, // sparse allows multiple null values
   password: { type: String, required: true },
   school: { type: mongoose.Schema.Types.ObjectId, ref: 'School', required: false }, // Allow null for global admins
+  schools: [{
+    schoolId: { type: mongoose.Schema.Types.ObjectId, ref: 'School' },
+    role: { type: String, enum: ['admin', 'teacher', 'student'], required: true }
+  }],
   role: { type: String, enum: ['admin', 'teacher', 'student', 'superAdmin'], required: true },
   mustChangePassword: { type: Boolean, default: false }, // Flag for first-time password change
   passwordResetToken: { type: String, default: null },
