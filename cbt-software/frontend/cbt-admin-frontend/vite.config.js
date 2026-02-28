@@ -21,7 +21,7 @@ export default defineConfig({
       }
     }),
     visualizer({
-      open: true,
+      open: false,
       filename: 'bundle-report.html',
     }),
   ],

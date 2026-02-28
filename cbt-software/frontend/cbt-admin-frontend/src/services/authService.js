@@ -11,7 +11,7 @@ import axios from 'axios';
 
 // Create axios instance
 const apiClient = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:3000',
+  baseURL: import.meta.env.VITE_API_BASE || 'http://localhost:5000',
   timeout: 10000,
   withCredentials: true // Include cookies
 });

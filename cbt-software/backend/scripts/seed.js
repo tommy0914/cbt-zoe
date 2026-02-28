@@ -35,7 +35,7 @@ async function seed() {
     const SchoolUser = createSchoolUserModel(conn);
     const schoolAdmin = new SchoolUser({
       username: 'schooladmin@example.com',
-      password: '',
+      password: 'SchoolAdminPass123!',
       role: 'admin',
     });
     await schoolAdmin.save();
@@ -62,7 +62,7 @@ async function seed() {
       // create a default admin in the new DB
       const schoolAdmin = new SchoolUserNew({
         username: 'schooladmin@example.com',
-        password: '',
+        password: 'SchoolAdminPass123!',
         role: 'admin',
       });
       await schoolAdmin.save();
