@@ -2,8 +2,21 @@
 
 This repository contains the CBT platform backend and frontend for YoungEmeritus.
 
-## OTP / School Registration
+## School Management
 
+### Listing
+- Any authenticated user can now fetch the list of all schools via `GET /api/schools`.
+  previously this route was restricted to super‑admins; the frontend's “Join School” page uses it to display available schools.
+
+### Creating a School
+There are two supported flows for creating a new school:
+
+1. **Superadmin API** – A superadmin can still create a school for someone else using `POST /api/schools` with `name` and `adminId`.
+2. **Direct/Self‑service** – If you set the environment variable `ALLOW_DIRECT_SCHOOL_CREATE=true` on the backend (and `VITE_ALLOW_DIRECT_SCHOOL_CREATE=true` on the frontend), any authenticated user can create a school for themselves by calling `POST /api/schools/create-direct` with `{ name }`. The creator becomes both the school’s admin and its superadmin, and their user role will be updated accordingly.
+
+> **Note:** in earlier versions there was an OTP-based registration flow (`/api/schools/request-otp` and `/api/schools/register`), but those endpoints are not currently implemented in the codebase. The README references are kept for historical context.
+
+### OTP Registration (legacy info)
 - The backend exposes `/api/schools/request-otp` which generates a one-time code (OTP) and stores it in `SchoolRegistration`.
 - In development (no email provider configured) the OTP is logged and returned in the API response to ease testing. In production the OTP will NOT be returned.
 - To complete registration call `/api/schools/register` with `registrationId`, `otp`, and `adminPassword`.

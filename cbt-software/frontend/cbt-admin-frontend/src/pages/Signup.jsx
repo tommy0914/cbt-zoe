@@ -21,8 +21,12 @@ export default function Signup() {
     setLoading(true);
     try {
       const authData = await api.post('/api/auth/register', { name, email, password });
-      if (authData.token) {
-        login(authData); // Update the auth context with the full auth object
+      if (authData.success && authData.accessToken) {
+        // Convert accessToken to token for consistency with auth context
+        login({
+          user: authData.user,
+          token: authData.accessToken
+        });
       } else {
         setError(authData.message || 'Signup failed: No token received.');
       }

@@ -90,6 +90,11 @@ export default function JoinSchool() {
         <div className="card">
           <h2>Join a School</h2>
           <p>Select a school from the list below to become a member.</p>
+          {import.meta.env.VITE_ALLOW_DIRECT_SCHOOL_CREATE === 'true' && (
+            <p style={{ fontSize: '13px' }}>
+              Can&apos;t find your school? <a href="/create-school" style={{ color: '#7c3aed' }}>Create one</a> (self-service)
+            </p>
+          )}
           {loading && <p>Loading schools...</p>}
           <ul style={{ listStyle: 'none', padding: 0 }}>
             {schools.map(school => (

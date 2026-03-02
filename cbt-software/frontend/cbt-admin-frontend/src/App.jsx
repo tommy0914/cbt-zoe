@@ -15,6 +15,7 @@ import StudentTest from './pages/StudentTest';
 import AdminDashboard from './pages/AdminDashboard';
 import TeacherClasses from './pages/TeacherClasses';
 import JoinSchool from './pages/JoinSchool';
+import CreateSchool from './pages/CreateSchool';
 import SchoolDashboard from './components/SchoolDashboard';
 
 // Wrapper components for protected routes - these handle auth checks internally
@@ -143,8 +144,9 @@ const router = createBrowserRouter([
       { path: 'login', element: <SecureLogin /> },
       { path: 'signup', element: <Signup /> },
       { path: 'join-school', element: <ProtectedJoinSchool /> },
+      { path: 'create-school', element: <ProtectedRoute><CreateSchool /></ProtectedRoute> },
       { path: 'student', element: <ProtectedStudentTest /> },
-      { path: 'admin', element: <ProtectedAdminDashboard /> },
+      { path: 'admin', element: <AdminDashboard /> },
       { path: 'teacher', element: <ProtectedTeacherClasses /> },
       { path: 'schools', element: <ProtectedSchoolDashboard /> },
     ],

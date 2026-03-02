@@ -1,15 +1,21 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import YoungEmeritusLogo from '../components/YoungEmeritusLogo';
 import './Landing.css';
 
 export default function Landing() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
 
   if (isAuthenticated) {
-    // If already authenticated, redirect to appropriate dashboard
-    return <Link to="/admin" />;
+    // If already authenticated, redirect to appropriate dashboard based on role
+    if (user?.schools && user.schools.length > 0) {
+      const role = user.schools[0]?.role;
+      if (role === 'admin') return <Navigate to="/admin" replace />;
+      if (role === 'teacher') return <Navigate to="/teacher" replace />;
+      if (role === 'superAdmin') return <Navigate to="/schools" replace />;
+    }
+    return <Navigate to="/student" replace />;
   }
 
   return (

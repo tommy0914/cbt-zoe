@@ -80,8 +80,11 @@ export default function SecureLogin() {
           localStorage.removeItem('rememberedEmail');
         }
 
-        // Login via context
-        login(result);
+        // Login via context - convert accessToken to token for consistency
+        login({
+          user: result.user,
+          token: result.accessToken
+        });
       }
     } catch (error) {
       setMessage(error.message || 'Login failed. Please try again.');

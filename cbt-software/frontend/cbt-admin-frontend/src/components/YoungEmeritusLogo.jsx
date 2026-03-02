@@ -1,4 +1,5 @@
-import React from 'react'
+  
+  import React from 'react'
 
 export default function YoungEmeritusLogo({ size = 40 }) {
   return (
