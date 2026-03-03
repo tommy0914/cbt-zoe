@@ -8,7 +8,7 @@ const QuestionForm = lazy(() => import('../components/QuestionForm'));
 const GradingDashboard = lazy(() => import('../components/GradingDashboard'));
 const AnalyticsDashboard = lazy(() => import('../components/AnalyticsDashboard'));
 const TestForm = lazy(() => import('../components/TestForm'));
-const UserManagement = lazy(() => import('../components/UserManagement'));
+const UserManagement = lazy(() => import('../components/UserManagement')); 
 const EnrollmentManagement = lazy(() => import('../components/EnrollmentManagement'));
 
 function AdminDashboard() {
@@ -19,9 +19,9 @@ function AdminDashboard() {
   const [newClassName, setNewClassName] = useState('');
   const [newClassSubjects, setNewClassSubjects] = useState('');
   const [difficulty, setDifficulty] = useState(null);
-  const [classSubjectInputs, setClassSubjectInputs] = useState({});
+  const [classSubjectInputs, setClassSubjectInputs] = useState({});        
   const [showQuestionForm, setShowQuestionForm] = useState(false);
-  const [showGradingDashboard, setShowGradingDashboard] = useState(false);
+  const [showGradingDashboard, setShowGradingDashboard] = useState(false); 
   const [showAnalyticsDashboard, setShowAnalyticsDashboard] = useState(false);
   const [showTestForm, setShowTestForm] = useState(false);
   const [showEnrollmentManagement, setShowEnrollmentManagement] = useState(false);
@@ -43,12 +43,12 @@ function AdminDashboard() {
   }, [token]);
 
   async function fetchOverall() {
-    const data = await api.get('/api/reports/overall-performance', token);
+    const data = await api.get('/api/reports/overall-performance', token); 
     setOverall(data);
   }
 
   async function fetchDifficulty() {
-    const data = await api.get('/api/reports/question-difficulty', token);
+    const data = await api.get('/api/reports/question-difficulty', token); 
     setDifficulty(data);
   }
 
@@ -82,7 +82,7 @@ function AdminDashboard() {
   }
 
   async function removeSubjectFromClass(classId, subject) {
-    const res = await api.get(`/api/classes/${classId}`); // ensure exists
+    const res = await api.get(`/api/classes/${classId}`); // ensure exists 
     const del = await fetch('/api/classes/' + classId + '/subjects/' + encodeURIComponent(subject), {
       method: 'DELETE',
       headers: { Authorization: token ? `Bearer ${token}` : '' },
@@ -150,7 +150,7 @@ function AdminDashboard() {
     if (!token) return alert('Admin login required');
     const fd = new FormData();
     fd.append('file', file);
-    const res = await api.postForm('/api/questions/upload', fd, token);
+    const res = await api.postForm('/api/questions/upload', fd, token);    
     setUploadMsg(res.message || JSON.stringify(res));
   }
 
@@ -166,10 +166,10 @@ function AdminDashboard() {
           <button onClick={fetchDifficulty} style={{ flex: 1, background: 'var(--ye-accent)' }}>Question Difficulty</button>
         </div>
       </div>
-      
+
 
       {overall && <pre>{JSON.stringify(overall, null, 2)}</pre>}
-      {difficulty && <pre>{JSON.stringify(difficulty, null, 2)}</pre>}
+      {difficulty && <pre>{JSON.stringify(difficulty, null, 2)}</pre>}     
       <div style={{ marginTop: 12 }} className="card">
         <h4>📤 Upload Questions</h4>
         <input type="file" accept=".xls,.xlsx,.csv" onChange={e => setFile(e.target.files[0])} />
@@ -179,7 +179,7 @@ function AdminDashboard() {
         {uploadMsg && <div style={{ marginTop: 8, color: 'green' }}>{uploadMsg}</div>}
       </div>
       <div style={{ marginTop: 12 }}>
-        <button onClick={() => setShowQuestionForm(!showQuestionForm)}>
+        <button onClick={() => setShowQuestionForm(!showQuestionForm)}>    
           {showQuestionForm ? 'Hide Question Form' : 'Create New Question Manually'}
         </button>
         <Suspense fallback={loadingSuspense}>
@@ -191,7 +191,7 @@ function AdminDashboard() {
           {showGradingDashboard ? 'Hide Grading Dashboard' : 'View Essays for Grading'}
         </button>
         <Suspense fallback={loadingSuspense}>
-          {showGradingDashboard && <GradingDashboard token={token} />}
+          {showGradingDashboard && <GradingDashboard token={token} />}     
         </Suspense>
       </div>
       <div style={{ marginTop: 12 }}>
@@ -199,7 +199,7 @@ function AdminDashboard() {
           {showAnalyticsDashboard ? 'Hide Analytics' : 'Show Analytics Dashboard'}
         </button>
         <Suspense fallback={loadingSuspense}>
-          {showAnalyticsDashboard && <AnalyticsDashboard token={token} />}
+          {showAnalyticsDashboard && <AnalyticsDashboard token={token} />} 
         </Suspense>
       </div>
       <div style={{ marginTop: 12 }}>
@@ -207,7 +207,7 @@ function AdminDashboard() {
           {showTestForm ? 'Hide Test Form' : 'Create New Test'}
         </button>
         <Suspense fallback={loadingSuspense}>
-          {showTestForm && <TestForm token={token} test={editingTest} onTestCreated={() => { fetchTests(); setShowTestForm(false); }} onTestUpdated={() => { fetchTests(); setEditingTest(null); setShowTestForm(false); }} />}
+          {showTestForm && <TestForm token={token} test={editingTest} onTestCreated={() => { fetchTests(); setShowTestForm(false); }} onTestUpdated={() => { fetchTests(); setEditingTest(null); setShowTestForm(false); }} />}  
         </Suspense>
       </div>
       <div style={{ marginTop: 12 }} className="card">
@@ -240,24 +240,13 @@ function AdminDashboard() {
 
         <div style={{ marginTop: 12 }}>
           {classes.map(c => (
-            <div key={c._id} className="card" style={{ marginBottom: 8 }}>
+            <div key={c._id} className="card" style={{ marginBottom: 8 }}> 
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <div><strong>{c.name}</strong></div>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <button onClick={() => setSelectedClassForExport(selectedClassForExport === c._id ? null : c._id)} style={{ background: selectedClassForExport === c._id ? '#667eea' : '#f3f4f6', color: selectedClassForExport === c._id ? 'white' : '#1f2937' }}>
-                    {selectedClassForExport === c._id ? 'Hide Export' : 'Export Data'}
-                  </button>
+                <div>
                   <button onClick={() => deleteClass(c._id)} style={{ color: 'red' }}>Delete Class</button>
                 </div>
               </div>
-
-              {selectedClassForExport === c._id && (
-                <div style={{ marginTop: '12px', padding: '12px', background: '#f9fafb', borderRadius: '6px', display: 'flex', gap: '8px' }}>
-                  <ExportResults classId={c._id} type="leaderboard" />
-                  <ExportResults classId={c._id} type="class-report" />
-                </div>
-              )}
-
               <div style={{ marginTop: 8 }}>
                 Subjects:
                 <ul>
