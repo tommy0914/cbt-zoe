@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import api from '../services/api';
 
-export default function UserManagement({ token }) {
+export default function UserManagement({ token, schoolId }) {
   const [teacherName, setTeacherName] = useState('');
   const [teacherEmail, setTeacherEmail] = useState('');
   const [teacherDepartment, setTeacherDepartment] = useState('');
@@ -20,6 +20,7 @@ export default function UserManagement({ token }) {
         email: teacherEmail,
         department: teacherDepartment,
         staffId: teacherStaffId,
+        schoolId: schoolId, // Pass the schoolId context
       }, token);
       setMessage(res.message || 'Teacher created successfully');
       setTeacherName('');
@@ -39,6 +40,7 @@ export default function UserManagement({ token }) {
         email: studentEmail,
         matricNumber: studentMatricNumber,
         level: studentLevel,
+        schoolId: schoolId, // Pass the schoolId context
       }, token);
       setMessage(res.message || 'Student created successfully');
       setStudentName('');
@@ -85,8 +87,8 @@ export default function UserManagement({ token }) {
               <input type="text" value={studentName} onChange={(e) => setStudentName(e.target.value)} required />
             </div>
             <div>
-              <label>Email</label>
-              <input type="email" value={studentEmail} onChange={(e) => setStudentEmail(e.target.value)} required />
+              <label>Email (Optional)</label>
+              <input type="email" value={studentEmail} onChange={(e) => setStudentEmail(e.target.value)} />
             </div>
             <div>
               <label>Matric Number</label>

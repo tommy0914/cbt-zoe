@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import api from '../services/api';
+import BulkQuestionUpload from './BulkQuestionUpload';
 
 export default function QuestionForm({ token }) {
+  const [mode, setMode] = useState('manual'); // 'manual' or 'bulk'
   const [questionText, setQuestionText] = useState('');
   const [questionType, setQuestionType] = useState('multiple-choice');
   const [options, setOptions] = useState(['', '', '', '']);
@@ -50,13 +52,32 @@ export default function QuestionForm({ token }) {
   };
 
   return (
-    <div className="card" style={{ marginTop: 20 }}>
-      <h4>Create New Question</h4>
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label>Subject</label>
-          <input value={subject} onChange={(e) => setSubject(e.target.value)} />
-        </div>
+    <div>
+      <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
+        <button 
+          onClick={() => setMode('manual')}
+          style={{ background: mode === 'manual' ? '#4f46e5' : '#f3f4f6', color: mode === 'manual' ? 'white' : 'black', border: 'none', padding: '8px 16px', borderRadius: '4px', cursor: 'pointer' }}
+        >
+          ✏️ Manual Entry
+        </button>
+        <button 
+          onClick={() => setMode('bulk')}
+          style={{ background: mode === 'bulk' ? '#4f46e5' : '#f3f4f6', color: mode === 'bulk' ? 'white' : 'black', border: 'none', padding: '8px 16px', borderRadius: '4px', cursor: 'pointer' }}
+        >
+          📁 Bulk Upload (Excel/CSV)
+        </button>
+      </div>
+
+      {mode === 'bulk' ? (
+        <BulkQuestionUpload token={token} />
+      ) : (
+        <div className="card" style={{ marginTop: 20 }}>
+          <h4>Create New Question</h4>
+          <form onSubmit={handleSubmit}>
+            <div>
+              <label>Subject</label>
+              <input value={subject} onChange={(e) => setSubject(e.target.value)} style={{ width: '100%', padding: '8px', marginTop: '4px' }}/>
+            </div>
         <div style={{ marginTop: 8 }}>
           <label>Question Type</label>
           <select value={questionType} onChange={(e) => setQuestionType(e.target.value)}>
@@ -100,6 +121,8 @@ export default function QuestionForm({ token }) {
         </div>
         {message && <div style={{ marginTop: 8, color: message.includes('success') ? 'green' : 'red' }}>{message}</div>}
       </form>
+    </div>
+      )}
     </div>
   );
 }

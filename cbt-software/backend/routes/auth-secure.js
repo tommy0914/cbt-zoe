@@ -68,6 +68,7 @@ router.post('/login', rateLimitLogin, validateLoginInput, async (req, res, next)
         id: result.user._id,
         name: result.user.name,
         email: result.user.email,
+        role: result.user.role,
         schools: result.user.schools
       },
       expiresIn: 900 // 15 minutes in seconds
@@ -105,11 +106,14 @@ router.post('/register', validateLoginInput, async (req, res) => {
       return res.status(409).json({ message: 'Email already registered' });
     }
 
+    const role = req.body.role || 'student';
+
     // Create new user
     const newUser = new User({
       name: name.trim(),
       email: email.toLowerCase(),
       password,
+      role,
       isEmailVerified: false, // Require email verification in production
       mustChangePassword: false
     });

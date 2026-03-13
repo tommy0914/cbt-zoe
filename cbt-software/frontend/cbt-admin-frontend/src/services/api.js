@@ -37,10 +37,12 @@ async function post(path, body) {
 
 async function get(path) {
   const res = await fetch(BASE + path, {
-    headers: {
-      ...getHeaders(),
-      'Content-Type': undefined, // Let browser set content-type for GET
-    }
+    headers: (() => {
+      const headers = getHeaders();
+      // GET requests do not need a Content-Type header.
+      delete headers['Content-Type'];
+      return headers;
+    })()
   });
   return res.json();
 }

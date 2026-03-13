@@ -58,10 +58,17 @@ router.post('/register', async (req, res, next) => {
       return res.status(409).json({ message: 'A user with this email already exists.' });
     }
 
+    const role = req.body.role || 'student';
+    if (['admin', 'superAdmin'].includes(role) && !req.user?.role?.includes('Admin')) {
+      // Basic safeguard: don't let public users register as admins
+      return res.status(403).json({ message: 'Cannot register as an admin.' });
+    }
+
     const newUser = new User({
       name,
       email: email.toLowerCase(),
       password,
+      role,
     });
 
     await newUser.save();

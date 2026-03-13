@@ -1,19 +1,31 @@
 const express = require('express');
 const router = express.Router();
-const Attempt = require('../models/Attempt');
-const Question = require('../models/Question');
 const StudentResult = require('../models/StudentResult');
 const ReportCard = require('../models/ReportCard');
 const User = require('../models/User');
 const Classroom = require('../models/Classroom');
-const Test = require('../models/Test');
+
+// Model Factories and DB
+const createAttemptModel = require('../models/Attempt');
+const createQuestionModel = require('../models/Question');
+const createTestModel = require('../models/Test');
+const { getConnection } = require('../utils/dbManager');
+const School = require('../models/School');
+
 const { verifyToken, requireRole } = require('../middleware/auth');
 const auditLogger = require('../services/auditLogger');
 
 // GET /api/reports/overall-performance
-router.get('/overall-performance', verifyToken, requireRole('admin'), async (req, res) => {
+router.get('/overall-performance', verifyToken, requireRole(['admin', 'teacher']), async (req, res) => {
   try {
-    const agg = await Attempt.aggregate([{ $group: { _id: null, avgScore: { $avg: '$score' }, count: { $sum: 1 } } }]);
+    const schoolId = req.user.schoolId;
+    if (!schoolId) return res.status(400).json({ message: 'Missing schoolId' });
+    const school = await School.findById(schoolId);
+    const conn = await getConnection(school.dbName);
+    const Attempt = createAttemptModel(conn);
+
+    // Summing both legacy score and new percentage
+    const agg = await Attempt.aggregate([{ $group: { _id: null, avgScore: { $avg: { $ifNull: [ '$score', '$percentage' ] } }, count: { $sum: 1 } } }]);
     const data = agg[0] || { avgScore: 0, count: 0 };
     res.json({ averageScore: data.avgScore, attempts: data.count });
   } catch (err) {
@@ -30,8 +42,16 @@ router.get('/user-history/:userId', verifyToken, async (req, res) => {
       return res.status(403).json({ message: 'Forbidden' });
     }
 
-    const attempts = await Attempt.find({ userId: targetUserId })
-      .populate('testId', 'testName durationMinutes')
+    const schoolId = req.user.schoolId;
+    if (!schoolId) return res.status(400).json({ message: 'Missing schoolId' });
+    const school = await School.findById(schoolId);
+    const conn = await getConnection(school.dbName);
+    const Attempt = createAttemptModel(conn);
+
+    const attempts = await Attempt.find({
+      $or: [ { userId: targetUserId }, { studentId: targetUserId } ]
+    })
+      .populate('testId', 'testName title durationMinutes')
       .sort({ startTime: -1 });
     res.json({ attempts });
   } catch (err) {
@@ -41,25 +61,34 @@ router.get('/user-history/:userId', verifyToken, async (req, res) => {
 
 // GET /api/reports/question-difficulty
 // Returns questions with successRate < 0.4
-router.get('/question-difficulty', verifyToken, requireRole('admin'), async (req, res) => {
+router.get('/question-difficulty', verifyToken, requireRole(['admin', 'teacher']), async (req, res) => {
   try {
-    // The above cannot directly access question.correctAnswer inside $group; instead do lookup
+    const schoolId = req.user.schoolId;
+    if (!schoolId) return res.status(400).json({ message: 'Missing schoolId' });
+    const school = await School.findById(schoolId);
+    const conn = await getConnection(school.dbName);
+    const Attempt = createAttemptModel(conn);
+    const Question = createQuestionModel(conn);
+
+    // Normalize responses to match userAnswers for legacy compatibility in pipeline
     const agg = await Attempt.aggregate([
-      { $unwind: '$userAnswers' },
-      { $lookup: { from: 'questions', localField: 'userAnswers.questionId', foreignField: '_id', as: 'question' } },
+      { $project: { answers: { $ifNull: [ '$userAnswers', '$responses' ] } } },
+      { $unwind: '$answers' },
+      { $lookup: { from: 'questions', localField: 'answers.questionId', foreignField: '_id', as: 'question' } },
       { $unwind: '$question' },
       {
         $project: {
-          qId: '$userAnswers.questionId',
-          selected: '$userAnswers.selectedAnswer',
+          qId: '$answers.questionId',
+          selected: { $ifNull: [ '$answers.selectedAnswer', '$answers.answer' ] },
           correct: '$question.correctAnswer',
+          isCorrectOverride: '$answers.isCorrect'
         },
       },
       {
         $group: {
           _id: '$qId',
           total: { $sum: 1 },
-          correct: { $sum: { $cond: [{ $eq: ['$selected', '$correct'] }, 1, 0] } },
+          correct: { $sum: { $cond: [{ $or: [ { $eq: ['$selected', '$correct'] }, { $eq: ['$isCorrectOverride', true] } ] }, 1, 0] } },
         },
       },
       {
@@ -76,7 +105,7 @@ router.get('/question-difficulty', verifyToken, requireRole('admin'), async (req
 
     // Populate question text for results
     const questionIds = agg.map((a) => a.questionId);
-    const questions = await Question.find({ _id: { $in: questionIds } }).select('questionText');
+    const questions = await Question.find({ _id: { $in: questionIds } }).select('questionText text');
     const qMap = questions.reduce((m, q) => {
       m[q._id.toString()] = q;
       return m;
@@ -84,7 +113,7 @@ router.get('/question-difficulty', verifyToken, requireRole('admin'), async (req
 
     const result = agg.map((a) => ({
       questionId: a.questionId,
-      questionText: qMap[a.questionId.toString()]?.questionText || '',
+      questionText: qMap[a.questionId.toString()]?.text || qMap[a.questionId.toString()]?.questionText || '',
       total: a.total,
       correct: a.correct,
       successRate: a.successRate,
@@ -102,9 +131,26 @@ router.get('/class-performance', verifyToken, requireRole(['admin', 'teacher']),
     const school = await School.findById(req.user.schoolId);
     if (!school) return res.status(404).json({ message: 'School not found' });
     const conn = await getConnection(school.dbName);
-    const AttemptModel = createSchoolAttempt(conn);
+    const AttemptModel = createAttemptModel(conn);
 
     const classPerformance = await AttemptModel.aggregate([
+      {
+        // New CBT schema might not have classId on Attempt directly, we could lookup Test to get classId,
+        // but for legacy compatibility we group by classId if it exists.
+        $lookup: {
+          from: 'tests',
+          localField: 'testId',
+          foreignField: '_id',
+          as: 'test'
+        }
+      },
+      { $unwind: { path: '$test', preserveNullAndEmptyArrays: true } },
+      {
+        $project: {
+          classId: { $ifNull: [ '$classId', '$test.classId' ] },
+          score: { $ifNull: [ '$percentage', '$score' ] }
+        }
+      },
       {
         $group: {
           _id: '$classId',
@@ -121,7 +167,7 @@ router.get('/class-performance', verifyToken, requireRole(['admin', 'teacher']),
         },
       },
       {
-        $unwind: '$class',
+        $unwind: { path: '$class', preserveNullAndEmptyArrays: false }, // Discard attempts without a valid class
       },
       {
         $project: {
@@ -141,8 +187,6 @@ router.get('/class-performance', verifyToken, requireRole(['admin', 'teacher']),
 
 // ============ STUDENT RESULTS GENERATION ============
 
-// POST /api/reports/generate-student-result/:studentId/:classId
-// Generate comprehensive result for a student in a specific class
 router.post('/generate-student-result/:studentId/:classId', verifyToken, requireRole(['admin', 'teacher']), async (req, res) => {
   try {
     const { studentId, classId } = req.params;
@@ -159,18 +203,41 @@ router.post('/generate-student-result/:studentId/:classId', verifyToken, require
       return res.status(404).json({ error: 'Classroom not found' });
     }
 
+    // Connect to the school's DB
+    const schoolId = student.school || req.user.schoolId;
+    if (!schoolId) {
+      return res.status(400).json({ error: 'Missing schoolId for database context' });
+    }
+    const school = await School.findById(schoolId);
+    if (!school) {
+        return res.status(404).json({ error: 'School not found' });
+    }
+    const conn = await getConnection(school.dbName);
+    
+    // Initialize tenant models
+    const Attempt = createAttemptModel(conn);
+    const Test = createTestModel(conn);
+
     // Get all attempts for this student in this class
+    // Support either legacy userId or CBT studentId
     const attempts = await Attempt.find({
-      userId: studentId,
-      classId: classId
+      $or: [ { userId: studentId }, { studentId: studentId } ],
+      // classId might not be directly on new schema, so let's allow fetching by Student ID over this test first
     }).populate('testId');
 
     if (attempts.length === 0) {
-      return res.status(400).json({ error: 'No test attempts found for this student in this class' });
+      return res.status(400).json({ error: 'No test attempts found for this student.' });
+    }
+
+    // Filter attempts to make sure their testId belongs to this classId
+    const classAttempts = attempts.filter(att => att.testId && String(att.testId.classId) === String(classId));
+    
+    if (classAttempts.length === 0) {
+        return res.status(400).json({ error: 'No test attempts found for this student in this specific class.' });
     }
 
     // Calculate performance metrics
-    let totalTests = attempts.length;
+    let totalTests = classAttempts.length;
     let totalScore = 0;
     let totalQuestions = 0;
     let correctAnswers = 0;
@@ -179,28 +246,43 @@ router.post('/generate-student-result/:studentId/:classId', verifyToken, require
     let passedTests = 0;
     const testAttempts = [];
 
-    attempts.forEach(attempt => {
-      const score = attempt.score || 0;
-      const questionsInTest = attempt.userAnswers.length;
-      const correct = attempt.userAnswers.filter(ua => ua.selectedAnswer).length;
+    classAttempts.forEach(attempt => {
+      // Handle difference between CBT (percentage/totalScore) and Legacy (score)
+      const isCBT = attempt.responses && attempt.responses.length >= 0;
+      const score = Math.round(isCBT ? attempt.percentage || 0 : attempt.score || 0); 
+      
+      const qArray = isCBT ? attempt.responses : attempt.userAnswers;
+      const questionsInTest = qArray ? qArray.length : 0;
+      
+      let correct = 0;
+      if (isCBT) {
+          correct = attempt.responses.filter(r => r.isCorrect).length;
+      } else {
+          correct = attempt.userAnswers ? attempt.userAnswers.filter(ua => ua.selectedAnswer).length : 0;
+      }
+      
+      const isPassed = isCBT ? (score >= (attempt.testId?.passingMarks || 50)) : attempt.isPassed;
 
       totalScore += score;
       totalQuestions += questionsInTest;
       highestScore = Math.max(highestScore, score);
       lowestScore = Math.min(lowestScore, score);
-      if (attempt.isPassed) passedTests++;
+      if (isPassed) passedTests++;
+
+      const attemptDuration = attempt.submitTime ? ((attempt.submitTime - attempt.startTime) / 60000) 
+                              : attempt.endTime ? ((attempt.endTime - attempt.startTime) / 60000) : 0;
 
       testAttempts.push({
         testId: attempt.testId._id,
-        testName: attempt.testId.testName,
+        testName: attempt.testId.title || attempt.testId.testName || 'Unknown Test',
         attemptId: attempt._id,
         score: score,
         totalQuestions: questionsInTest,
         correctAnswers: correct,
-        duration: attempt.endTime ? Math.round((attempt.endTime - attempt.startTime) / 60000) : 0,
-        completedAt: attempt.endTime,
-        status: attempt.isPassed ? 'passed' : 'completed',
-        isPassed: attempt.isPassed
+        duration: Math.round(attemptDuration),
+        completedAt: attempt.submitTime || attempt.endTime || attempt.createdAt,
+        status: isPassed ? 'passed' : 'completed',
+        isPassed: isPassed
       });
     });
 
@@ -228,7 +310,7 @@ router.post('/generate-student-result/:studentId/:classId', verifyToken, require
         studentEmail: student.email,
         classId,
         className: classroom.name,
-        schoolId: student.schoolId,
+        schoolId: schoolId,
       });
     }
 

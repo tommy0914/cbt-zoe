@@ -18,6 +18,7 @@ const schoolsRoute = require('./routes/schools');
 const adminRoute = require('./routes/admin');
 const enrollmentRoute = require('./routes/enrollment');
 const quickwinsRoute = require('./routes/quickwins');
+const attendanceRoute = require('./routes/attendance');
 const auditMiddleware = require('./middleware/audit');
 
 const app = express();
@@ -68,12 +69,15 @@ app.use('/api/auth', authSecureRoute);
 app.use('/api/schools', schoolsRoute);
 app.use('/api/questions', questionsRoute);
 app.use('/api/tests', testRoute);
+const testEngineRoute = require('./routes/testEngine');
+app.use('/api/test-engine', testEngineRoute);
 app.use('/api/reports', reportsRoute);
 app.use('/api/classes', classesRoute);
 app.use('/api/users', usersRoute);
 app.use('/api/admin', adminRoute);
 app.use('/api/enrollment', enrollmentRoute);
 app.use('/api/quickwins', quickwinsRoute);
+app.use('/api/attendance', attendanceRoute);
 
 // Health check
 app.get('/health', (req, res) => res.json({ status: 'ok' }));

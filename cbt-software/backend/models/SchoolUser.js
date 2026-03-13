@@ -9,6 +9,7 @@ module.exports = function (conn) {
     username: { type: String, required: true, unique: true },
     password: { type: String, required: true },
     role: { type: String, enum: ['admin', 'teacher', 'student'], default: 'student' },
+    profilePicture: { type: String, default: '' }, // Base64 string encoded profile picture
     createdAt: { type: Date, default: Date.now },
   });
 

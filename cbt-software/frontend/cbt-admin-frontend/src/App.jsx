@@ -87,7 +87,7 @@ function AppLayout() {
                     <Link to="/join-school">Join School</Link>
                     <Link to="/student">Student Test</Link>
                     {(user?.role === 'admin' || user?.role === 'teacher') && <Link to="/teacher">My Classes</Link>}
-                    {(user?.role === 'admin') && <Link to="/admin">Admin Dashboard</Link>}
+                    {(user?.role === 'admin' || user?.role === 'superAdmin') && <Link to="/admin">Admin Dashboard</Link>}
                     {(user?.role === 'superAdmin') && <Link to="/schools">School Dashboard</Link>}
                     <button onClick={logout} className="logout-btn">
                       Logout

@@ -27,8 +27,9 @@ const validateTeacherCreation = [
 // Validation chain for creating a student
 const validateStudentCreation = [
   body('name').notEmpty().withMessage('Name is required'),
-  body('email').isEmail().withMessage('Must be a valid email address')
+  body('email').optional({ checkFalsy: true }).isEmail().withMessage('Must be a valid email address')
     .custom(async (email) => {
+      if (!email) return true;
       const existingUser = await User.findOne({ email });
       if (existingUser) {
         throw new Error('A user with this email already exists.');
@@ -56,6 +57,7 @@ router.post('/teachers', verifyToken, requirePermission('create_user'), validate
 
     res.status(201).json({ message: 'Teacher created successfully', user: newUser });
   } catch (error) {
+    console.error('Teacher creation failed:', error);
     res.status(500).json({ message: 'Failed to create teacher', error: error.message });
   }
 });
@@ -68,8 +70,20 @@ router.post('/students', verifyToken, requirePermission('create_user'), validate
   }
 
   try {
-    const { name, email, matricNumber, level } = req.body;
+    let { name, email, matricNumber, level } = req.body;
     const schoolId = req.user.schoolId; // Assuming admin's schoolId is in the token
+
+    // Generate dummy email if none provided
+    const isDummyEmail = !email || email.trim() === '';
+    if (isDummyEmail) {
+      email = `${matricNumber.toLowerCase().replace(/[^a-z0-9]/g, '')}@student.local`;
+      
+      // Check if dummy email already exists (unlikely unless duplicate matric numbers)
+      const existingDummy = await User.findOne({ email });
+      if (existingDummy) {
+        return res.status(400).json({ errors: [{ msg: 'A student with this Matriculation Number already exists.' }] });
+      }
+    }
 
     // Generate temporary password
     const tempPassword = generateTemporaryPassword();
@@ -96,13 +110,21 @@ router.post('/students', verifyToken, requirePermission('create_user'), validate
     const school = await schoolConnection.findById(schoolId);
     const schoolName = school ? school.name : 'Your School';
 
-    // Send credentials email
-    await sendCredentialsEmail(email, tempPassword, name, schoolName);
+    // Only send credentials email if it's a real email
+    if (!isDummyEmail) {
+      await sendCredentialsEmail(email, tempPassword, name, schoolName);
+      res.status(201).json({ 
+        message: 'Student created successfully. Credentials sent to student email.',
+        user: newUser 
+      });
+    } else {
+      res.status(201).json({ 
+        message: 'Student created successfully. Please provide this temporary password to the student: ' + tempPassword,
+        user: newUser,
+        temporaryPassword: tempPassword
+      });
+    }
 
-    res.status(201).json({ 
-      message: 'Student created successfully. Credentials sent to student email.',
-      user: newUser 
-    });
   } catch (error) {
     res.status(500).json({ message: 'Failed to create student', error: error.message });
   }

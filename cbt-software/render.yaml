@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: cbt-backend
+    runtime: node
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
+    plan: free
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGO_URI
+        sync: false
+      - key: SESSION_SECRET
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_REFRESH_SECRET
+        sync: false
+      - key: ALLOW_DIRECT_SCHOOL_CREATE
+        value: "true"

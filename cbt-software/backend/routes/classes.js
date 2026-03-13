@@ -11,17 +11,24 @@ const createSchoolClassroom = require('../models/SchoolClassroom');
 router.post('/', verifyToken, async (req, res) => {
   const { name, subjects, teacherId } = req.body;
   if (!name) return res.status(400).json({ message: 'Class name is required' });
-  if (!req.user.schoolId) return res.status(400).json({ message: 'User must belong to a school' });
 
   try {
-    const school = await School.findById(req.user.schoolId);
+    const schoolId = req.user.schoolId || req.query.schoolId || req.body.schoolId;
+    if (!schoolId) return res.status(400).json({ message: 'School ID required' });
+    const school = await School.findById(schoolId);
     if (!school) return res.status(404).json({ message: 'School not found' });
     const conn = await getConnection(school.dbName);
     const SchoolClassroom = createSchoolClassroom(conn);
+
+    let assignedTeacher = teacherId || null;
+    if (req.user.role === 'teacher' && !assignedTeacher) {
+      assignedTeacher = req.user._id;
+    }
+
     const cls = new SchoolClassroom({
       name,
       subjects: Array.isArray(subjects) ? subjects : [],
-      teacherId: teacherId || null,
+      teacherId: assignedTeacher,
     });
     await cls.save();
     // Audit log: class created
@@ -45,12 +52,15 @@ router.post('/', verifyToken, async (req, res) => {
 // GET /api/classes
 router.get('/', verifyToken, async (req, res) => {
   try {
-    const school = await School.findById(req.user.schoolId);
+    const schoolId = req.user.schoolId || req.query.schoolId;
+    if (!schoolId) return res.status(400).json({ message: 'School ID required' });
+
+    const school = await School.findById(schoolId);
     if (!school) return res.status(404).json({ message: 'School not found' });
     const conn = await getConnection(school.dbName);
     const SchoolClassroom = createSchoolClassroom(conn);
     let classes;
-    if (req.user.role === 'admin') {
+    if (req.user.role === 'admin' || req.user.role === 'superAdmin') {
       classes = await SchoolClassroom.find().sort({ createdAt: -1 });
     } else if (req.user.role === 'teacher') {
       classes = await SchoolClassroom.find({ teacherId: req.user._id.toString() }).sort({ createdAt: -1 });
@@ -66,7 +76,9 @@ router.get('/', verifyToken, async (req, res) => {
 // Get single class (requires authentication)
 router.get('/:id', verifyToken, async (req, res) => {
   try {
-    const school = await School.findById(req.user.schoolId);
+    const schoolId = req.user.schoolId || req.query.schoolId || req.body.schoolId;
+    if (!schoolId) return res.status(400).json({ message: 'School ID required' });
+    const school = await School.findById(schoolId);
     if (!school) return res.status(404).json({ message: 'School not found' });
     const conn = await getConnection(school.dbName);
     const SchoolClassroom = createSchoolClassroom(conn);
@@ -82,7 +94,9 @@ router.get('/:id', verifyToken, async (req, res) => {
 router.put('/:id', verifyToken, requireRole('admin'), async (req, res) => {
   try {
     const { name, subjects, teacherId } = req.body;
-    const school = await School.findById(req.user.schoolId);
+    const schoolId = req.user.schoolId || req.query.schoolId || req.body.schoolId;
+    if (!schoolId) return res.status(400).json({ message: 'School ID required' });
+    const school = await School.findById(schoolId);
     if (!school) return res.status(404).json({ message: 'School not found' });
     const conn = await getConnection(school.dbName);
     const SchoolClassroom = createSchoolClassroom(conn);
@@ -111,7 +125,9 @@ router.put('/:id', verifyToken, requireRole('admin'), async (req, res) => {
 // Delete class (admin)
 router.delete('/:id', verifyToken, requireRole('admin'), async (req, res) => {
   try {
-    const school = await School.findById(req.user.schoolId);
+    const schoolId = req.user.schoolId || req.query.schoolId || req.body.schoolId;
+    if (!schoolId) return res.status(400).json({ message: 'School ID required' });
+    const school = await School.findById(schoolId);
     if (!school) return res.status(404).json({ message: 'School not found' });
     const conn = await getConnection(school.dbName);
     const SchoolClassroom = createSchoolClassroom(conn);
@@ -137,7 +153,9 @@ router.post('/:id/subjects', verifyToken, async (req, res) => {
   const { subject } = req.body;
   if (!subject) return res.status(400).json({ message: 'Subject is required' });
   try {
-    const school = await School.findById(req.user.schoolId);
+    const schoolId = req.user.schoolId || req.query.schoolId || req.body.schoolId;
+    if (!schoolId) return res.status(400).json({ message: 'School ID required' });
+    const school = await School.findById(schoolId);
     if (!school) return res.status(404).json({ message: 'School not found' });
     const conn = await getConnection(school.dbName);
     const SchoolClassroom = createSchoolClassroom(conn);
@@ -170,7 +188,9 @@ router.post('/:id/subjects', verifyToken, async (req, res) => {
 router.delete('/:id/subjects/:subject', verifyToken, async (req, res) => {
   try {
     const subject = decodeURIComponent(req.params.subject);
-    const school = await School.findById(req.user.schoolId);
+    const schoolId = req.user.schoolId || req.query.schoolId || req.body.schoolId;
+    if (!schoolId) return res.status(400).json({ message: 'School ID required' });
+    const school = await School.findById(schoolId);
     if (!school) return res.status(404).json({ message: 'School not found' });
     const conn = await getConnection(school.dbName);
     const SchoolClassroom = createSchoolClassroom(conn);
@@ -202,7 +222,9 @@ router.delete('/:id/subjects/:subject', verifyToken, async (req, res) => {
 router.post('/:id/teacher', verifyToken, requireRole('admin'), async (req, res) => {
   try {
     const { teacherId } = req.body;
-    const school = await School.findById(req.user.schoolId);
+    const schoolId = req.user.schoolId || req.query.schoolId || req.body.schoolId;
+    if (!schoolId) return res.status(400).json({ message: 'School ID required' });
+    const school = await School.findById(schoolId);
     if (!school) return res.status(404).json({ message: 'School not found' });
     const conn = await getConnection(school.dbName);
     const SchoolClassroom = createSchoolClassroom(conn);
@@ -221,7 +243,9 @@ router.post('/:id/teacher', verifyToken, requireRole('admin'), async (req, res) 
 router.post('/:id/members', verifyToken, async (req, res) => {
   try {
     const { userId } = req.body;
-    const school = await School.findById(req.user.schoolId);
+    const schoolId = req.user.schoolId || req.query.schoolId || req.body.schoolId;
+    if (!schoolId) return res.status(400).json({ message: 'School ID required' });
+    const school = await School.findById(schoolId);
     if (!school) return res.status(404).json({ message: 'School not found' });
     const conn = await getConnection(school.dbName);
     const SchoolClassroom = createSchoolClassroom(conn);
@@ -254,7 +278,9 @@ router.post('/:id/members', verifyToken, async (req, res) => {
 router.delete('/:id/members/:memberId', verifyToken, async (req, res) => {
   try {
     const memberId = req.params.memberId;
-    const school = await School.findById(req.user.schoolId);
+    const schoolId = req.user.schoolId || req.query.schoolId || req.body.schoolId;
+    if (!schoolId) return res.status(400).json({ message: 'School ID required' });
+    const school = await School.findById(schoolId);
     if (!school) return res.status(404).json({ message: 'School not found' });
     const conn = await getConnection(school.dbName);
     const SchoolClassroom = createSchoolClassroom(conn);

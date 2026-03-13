@@ -25,7 +25,8 @@ export default function Login() {
     if (!email || !password) return setMsg('Email and password are required');
     setLoading(true);
     try {
-      const authData = await api.post('/api/auth/login', { email, password });
+      // Send loginIdentifier instead of email so Passport LocalStrategy generic lookup works
+      const authData = await api.post('/api/auth/login', { loginIdentifier: email, password });
       if (authData.token) {
         login(authData);
       } else {
@@ -80,8 +81,8 @@ export default function Login() {
 
           <form onSubmit={handleLogin} className="card">
             <div style={{ marginBottom: '16px' }}>
-              <label>Email Address</label>
-              <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
+              <label>Email or Matric Number</label>
+              <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email or Matric Number" />
             </div>
             <div style={{ marginBottom: '16px' }}>
               <label>Password</label>

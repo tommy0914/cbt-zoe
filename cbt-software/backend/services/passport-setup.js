@@ -12,13 +12,21 @@ passport.deserializeUser((id, done) => {
   });
 });
 
-// Local Strategy for email/password login
+// Local Strategy for email/username/password login
 passport.use(
-  new LocalStrategy({ usernameField: 'email' }, async (email, password, done) => {
+  new LocalStrategy({ usernameField: 'loginIdentifier' }, async (loginIdentifier, password, done) => {
     try {
-      const user = await User.findOne({ email: email.toLowerCase() });
+      // Find user by either email (case-insensitive) or username
+      const searchIdentifier = loginIdentifier.toLowerCase();
+      const user = await User.findOne({ 
+        $or: [
+          { email: searchIdentifier },
+          { username: searchIdentifier }
+        ]
+      });
+      
       if (!user) {
-        return done(null, false, { message: 'No user found with that email.' });
+        return done(null, false, { message: 'No user found with that email or username.' });
       }
 
       const isMatch = await user.comparePassword(password);

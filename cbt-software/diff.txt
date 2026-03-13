@@ -1,0 +1,16 @@
+﻿cbt-software/backend/middleware/audit.js
+cbt-software/backend/middleware/auth.js
+cbt-software/backend/models/User.js
+cbt-software/backend/routes/auth-secure.js
+cbt-software/backend/routes/classes.js
+cbt-software/backend/routes/questions.js
+cbt-software/backend/routes/test.js
+cbt-software/backend/services/authService.js
+cbt-software/frontend/cbt-admin-frontend/src/App.jsx
+cbt-software/frontend/cbt-admin-frontend/src/components/EnrollmentManagement.jsx
+cbt-software/frontend/cbt-admin-frontend/src/components/ProtectedRoute.jsx
+cbt-software/frontend/cbt-admin-frontend/src/components/UserManagement.jsx
+cbt-software/frontend/cbt-admin-frontend/src/context/AuthContext.jsx
+cbt-software/frontend/cbt-admin-frontend/src/pages/AdminDashboard.jsx
+cbt-software/frontend/cbt-admin-frontend/src/pages/JoinSchool.jsx
+cbt-software/frontend/cbt-admin-frontend/src/services/api.js

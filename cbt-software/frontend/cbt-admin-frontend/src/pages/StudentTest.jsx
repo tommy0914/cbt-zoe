@@ -3,6 +3,7 @@ import api from '../services/api'
 import Announcements from '../components/Announcements'
 import Leaderboard from '../components/Leaderboard'
 import Certificates from '../components/Certificates'
+import TestTaking from '../components/TestTaking'
 
 export default function StudentTest() {
   const token = JSON.parse(localStorage.getItem('auth'))?.token;
@@ -20,6 +21,15 @@ export default function StudentTest() {
   const [result, setResult] = useState(null)
   const timerRef = useRef(null)
   const [timeLeft, setTimeLeft] = useState(null)
+  
+  // Student Profile State
+  const [studentProfile, setStudentProfile] = useState(null)
+  const [profileLoading, setProfileLoading] = useState(false)
+  const fileInputRef = useRef(null)
+
+  // CBT Engine State
+  const [cbtTests, setCbtTests] = useState([])
+  const [activeCbtTestId, setActiveCbtTestId] = useState(null)
 
   useEffect(() => {
     if (!attempt) return
@@ -75,12 +85,40 @@ export default function StudentTest() {
         }
       } catch (err) {
         // ignore; classes endpoint requires auth
-        // console.error('Failed to load classes', err)
       }
     }
+    
+    async function fetchProfile() {
+      if (!token) return
+      try {
+        const authData = JSON.parse(localStorage.getItem('auth'));
+        if (authData && authData.userId) {
+          setProfileLoading(true);
+          const res = await api.get(`/api/users/${authData.userId}`, token);
+          if (res.user) setStudentProfile(res.user);
+        }
+      } catch (err) {
+        console.error('Failed to fetch profile', err);
+      } finally {
+        setProfileLoading(false);
+      }
+    }
+
     loadClasses()
+    fetchProfile()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, page, pageSize])
+
+  // Fetch CBT Engine Tests when selected class changes
+  useEffect(() => {
+    if (selectedClassId && token) {
+      api.get(`/api/test-engine/class/${selectedClassId}`, token)
+        .then(data => setCbtTests(data.tests || []))
+        .catch(err => console.error('Failed to load CBT tests:', err));
+    } else {
+      setCbtTests([]);
+    }
+  }, [selectedClassId, token]);
 
   function gotoPage(nextPage) {
     if (nextPage < 1) return
@@ -143,10 +181,124 @@ export default function StudentTest() {
     };
   }, []);
 
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      alert('Please upload an image file.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        // Resize image to max 200x200 for database storage efficiency
+        const canvas = document.createElement('canvas');
+        const MAX_WIDTH = 200;
+        const MAX_HEIGHT = 200;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height *= MAX_WIDTH / width;
+            width = MAX_WIDTH;
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width *= MAX_HEIGHT / height;
+            height = MAX_HEIGHT;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+
+        // Compress and encode as Base64 JPEG
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+        
+        // Optimistically update UI
+        setStudentProfile(prev => ({ ...prev, profilePicture: dataUrl }));
+
+        // Save to backend
+        const authData = JSON.parse(localStorage.getItem('auth'));
+        if (authData && authData.userId) {
+          api.put(`/api/users/${authData.userId}`, { profilePicture: dataUrl }, token)
+            .catch(err => {
+              console.error('Failed to save profile picture', err);
+              alert('Failed to save image. Please try again.');
+            });
+        }
+      };
+      img.src = event.target.result;
+    };
+    reader.readAsDataURL(file);
+  };
+
   return (
     <div onCopy={(e) => e.preventDefault()} onPaste={(e) => e.preventDefault()}>
-      <h3>📋 Assessment Portal</h3>
-      <div className="card">
+      {activeCbtTestId ? (
+        <TestTaking testId={activeCbtTestId} onBack={() => setActiveCbtTestId(null)} />
+      ) : (
+        <>
+          {/* Profile Card Section */}
+          {token && studentProfile && (
+            <div className="card" style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '20px', background: 'linear-gradient(to right, #f8fafc, #eff6ff)', border: '1px solid #bfdbfe' }}>
+              <div 
+                style={{ 
+                  width: '80px', 
+                  height: '80px', 
+                  borderRadius: '50%', 
+                  backgroundColor: '#e2e8f0',
+                  backgroundImage: studentProfile.profilePicture ? `url(${studentProfile.profilePicture})` : 'none',
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  border: '3px solid white',
+                  boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+                  position: 'relative',
+                  overflow: 'hidden'
+                }}
+                onClick={() => fileInputRef.current?.click()}
+                title="Click to update profile picture"
+              >
+                {!studentProfile.profilePicture && (
+                  <span style={{ fontSize: '24px', color: '#94a3b8' }}>👤</span>
+                )}
+                {/* Overlay on hover */}
+                <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'rgba(0,0,0,0.5)', color: 'white', fontSize: '10px', textAlign: 'center', padding: '2px 0', opacity: 0, transition: 'opacity 0.2s' }}
+                     onMouseEnter={(e) => e.currentTarget.style.opacity = 1}
+                     onMouseLeave={(e) => e.currentTarget.style.opacity = 0}
+                >
+                  Edit
+                </div>
+                <input 
+                  type="file" 
+                  ref={fileInputRef} 
+                  onChange={handleImageUpload} 
+                  accept="image/*" 
+                  style={{ display: 'none' }} 
+                />
+              </div>
+              <div>
+                <h3 style={{ margin: '0 0 4px 0', color: '#1e293b' }}>{studentProfile.name}</h3>
+                <div style={{ display: 'flex', gap: '15px', color: '#64748b', fontSize: '14px' }}>
+                  <span><strong style={{ color: '#475569' }}>Matric No:</strong> {studentProfile.matricNumber || studentProfile.username || 'N/A'}</span>
+                  {studentProfile.level && <span><strong style={{ color: '#475569' }}>Level:</strong> {studentProfile.level}</span>}
+                </div>
+              </div>
+            </div>
+          )}
+
+          <h3>📋 Assessment Portal</h3>
+          <div className="card">
         <h4>Select Your Assessment</h4>
         {token ? (
           <>
@@ -248,12 +400,40 @@ export default function StudentTest() {
         </div>
       )}
 
+      {/* New CBT Engine Tests Section */}
+      {selectedClassId && cbtTests.length > 0 && (
+        <div className="card" style={{ marginTop: '16px', border: '2px solid #8b5cf6' }}>
+          <h4>🚀 New Test Engine Assessments</h4>
+          <div style={{ display: 'grid', gap: '10px' }}>
+            {cbtTests.map(t => (
+              <div key={t._id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f5f3ff', padding: '12px', borderRadius: '8px' }}>
+                <div>
+                  <strong>{t.title}</strong>
+                  <div style={{ fontSize: '12px', color: '#6d28d9', marginTop: '4px' }}>
+                    {t.durationMinutes} Minutes • {t.questions?.length || 0} Questions
+                  </div>
+                  {t.description && <div style={{ fontSize: '12px', color: '#555', marginTop: '4px' }}>{t.description}</div>}
+                </div>
+                <button 
+                  onClick={() => setActiveCbtTestId(t._id)}
+                  style={{ background: '#7c3aed', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer' }}
+                >
+                  Take Test
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Quick Wins Components */}
       {selectedClassId && (
         <>
           <Announcements classId={selectedClassId} isTeacher={false} />
           <Leaderboard classId={selectedClassId} studentId={token ? JSON.parse(localStorage.getItem('auth'))?.userId : null} isStudent={true} />
           <Certificates studentId={token ? JSON.parse(localStorage.getItem('auth'))?.userId : null} isStudent={true} />
+        </>
+      )}
         </>
       )}
     </div>

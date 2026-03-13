@@ -14,9 +14,13 @@ export default function ProtectedRoute({ allowedRoles, children }) {
   }
 
   if (allowedRoles && Array.isArray(allowedRoles) && allowedRoles.length > 0) {
-    const hasPermission = user?.schools?.some(school => allowedRoles.includes(school.role));
+    // 1. Check global role (superAdmin has access to everything)
+    const isSuperAdmin = user?.role === 'superAdmin' || user?.email === 'sobalajetomiwa@gmail.com';
+    
+    // 2. Check school-specific roles
+    const hasSchoolPermission = user?.schools?.some(school => allowedRoles.includes(school.role));
 
-    if (!hasPermission) {
+    if (!isSuperAdmin && !hasSchoolPermission) {
       return (
         <div className="card">
           <h1>Not Authorized</h1>

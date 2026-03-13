@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
 
-export default function EnrollmentManagement() {
+export default function EnrollmentManagement({ schoolId }) {
   const token = JSON.parse(localStorage.getItem('auth'))?.token;
   const [enrollmentRequests, setEnrollmentRequests] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -12,12 +12,13 @@ export default function EnrollmentManagement() {
 
   useEffect(() => {
     fetchEnrollmentRequests();
-  }, [token]);
+  }, [token, schoolId]);
 
   async function fetchEnrollmentRequests() {
     try {
       setLoading(true);
-      const res = await api.get('/api/enrollment/requests', token);
+      const url = schoolId ? `/api/enrollment/requests?schoolId=${schoolId}` : '/api/enrollment/requests';
+      const res = await api.get(url, token);
       setEnrollmentRequests(res.requests || []);
       setError(null);
     } catch (err) {
@@ -29,7 +30,8 @@ export default function EnrollmentManagement() {
 
   async function handleApprove(requestId) {
     try {
-      await api.post(`/api/enrollment/approve/${requestId}`, {}, token);
+      const url = schoolId ? `/api/enrollment/approve/${requestId}?schoolId=${schoolId}` : `/api/enrollment/approve/${requestId}`;
+      await api.post(url, {}, token);
       setMessage('Enrollment approved!');
       setTimeout(() => {
         fetchEnrollmentRequests();
@@ -42,7 +44,8 @@ export default function EnrollmentManagement() {
 
   async function handleReject(requestId, reason = '') {
     try {
-      await api.post(`/api/enrollment/reject/${requestId}`, { reason }, token);
+      const url = schoolId ? `/api/enrollment/reject/${requestId}?schoolId=${schoolId}` : `/api/enrollment/reject/${requestId}`;
+      await api.post(url, { reason }, token);
       setMessage('Enrollment rejected!');
       setTimeout(() => {
         fetchEnrollmentRequests();
@@ -61,10 +64,16 @@ export default function EnrollmentManagement() {
 
     const formData = new FormData();
     formData.append('file', file);
+    if (schoolId) {
+      formData.append('schoolId', schoolId);
+    }
 
     try {
       setLoading(true);
-      const res = await api.postForm('/api/enrollment/bulk-enroll', formData, token);
+      const uploadUrl = schoolId
+        ? `/api/enrollment/bulk-enroll?schoolId=${encodeURIComponent(schoolId)}`
+        : '/api/enrollment/bulk-enroll';
+      const res = await api.postForm(uploadUrl, formData, token);
       setUploadMsg(`✓ ${res.results.success.length} enrolled, ${res.results.failed.length} failed`);
       setFile(null);
       if (res.results.failed.length > 0) {

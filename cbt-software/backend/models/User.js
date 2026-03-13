@@ -5,7 +5,13 @@ const SALT_ROUNDS = 10;
 
 const UserSchema = new mongoose.Schema({
   name: { type: String, required: true },
-  email: { type: String, required: true, unique: true },
+  email: { 
+    type: String, 
+    required: true, 
+    unique: true,
+    lowercase: true,
+    trim: true
+  },
   username: { type: String, sparse: true }, // sparse allows multiple null values
   password: { type: String, required: true },
   school: { type: mongoose.Schema.Types.ObjectId, ref: 'School', required: false }, // Allow null for global admins
@@ -30,6 +36,7 @@ const UserSchema = new mongoose.Schema({
   isActive: { type: Boolean, default: true }, // Account active status
   isEmailVerified: { type: Boolean, default: false }, // Email verification status
   emailVerificationToken: { type: String, default: null }, // Email verification token
+  profilePicture: { type: String, default: '' }, // Base64 encoded profile picture
   
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },

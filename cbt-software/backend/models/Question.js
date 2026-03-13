@@ -1,46 +1,24 @@
 const mongoose = require('mongoose');
 
-const QuestionSchema = new mongoose.Schema({
-  questionText: {
-    type: String,
-    required: true, // The question cannot be empty
-  },
-  questionType: {
-    type: String,
-    enum: ['multiple-choice', 'true-false', 'fill-in-the-blank', 'essay'],
-    default: 'multiple-choice',
-    required: true,
-  },
-  options: {
-    type: [String],
-    default: undefined,
-  },
-  correctAnswer: {
-    type: String,
-    default: undefined,
-  },
-  subject: {
-    type: String,
-    default: 'General', // Optional: Helps group questions (Math, English, etc.)
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now,
-  },
-});
+// Export a factory that returns a Question model bound to the provided connection
+module.exports = function (conn) {
+  const schema = new mongoose.Schema({
+    text: { type: String, required: true },
+    type: { type: String, enum: ['multiple_choice', 'true_false', 'short_answer', 'essay'], default: 'multiple_choice' },
+    options: [{ type: String }], // Array of choices for multiple choice
+    correctAnswer: { type: String, required: true }, // The string value of the correct answer
+    points: { type: Number, default: 1 },
+    explanation: { type: String }, // Explanation for the correct answer
+    difficulty: { type: String, enum: ['easy', 'medium', 'hard'], default: 'medium' },
+    tags: [{ type: String }],
+    createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    createdAt: { type: Date, default: Date.now },
+  });
 
-QuestionSchema.path('options').validate(function (value) {
-  if (this.questionType === 'multiple-choice' || this.questionType === 'true-false') {
-    return value && value.length > 0;
+  // Avoid model overwrite error: check existing model on this connection
+  try {
+    return conn.model('Question');
+  } catch (_error) {
+    return conn.model('Question', schema);
   }
-  return true;
-}, 'Options are required for multiple-choice and true-false questions.');
-
-QuestionSchema.path('correctAnswer').validate(function (value) {
-  if (this.questionType !== 'essay') {
-    return value !== undefined && value !== null && value !== '';
-  }
-  return true;
-}, 'Correct answer is required for all question types except essay.');
-
-module.exports = mongoose.model('Question', QuestionSchema);
+};

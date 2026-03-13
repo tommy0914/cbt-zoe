@@ -15,7 +15,9 @@ const createSchoolClassroom = require('../models/SchoolClassroom');
 router.get('/list', verifyToken, async (req, res) => {
   try {
     // use per-school Test model
-    const school = await School.findById(req.user.schoolId);
+    const schoolId = req.user.schoolId || req.query.schoolId || req.body.schoolId;
+    if (!schoolId) return res.status(400).json({ message: 'School ID required' });
+    const school = await School.findById(schoolId);
     if (!school) return res.status(404).json({ message: 'School not found' });
     const conn = await getConnection(school.dbName);
     const TestModel = createSchoolTest(conn);
@@ -23,6 +25,132 @@ router.get('/list', verifyToken, async (req, res) => {
     res.json({ tests });
   } catch (err) {
     res.status(500).json({ message: 'Failed to fetch tests: ' + err.message });
+  }
+});
+
+// POST /api/tests
+// Create a new test (Admin or Teacher)
+router.post('/', verifyToken, requireRole(['admin', 'teacher', 'superAdmin']), async (req, res) => {
+  const { testName, durationMinutes, passScorePercentage, availableFrom, availableUntil, questionDistribution } = req.body;
+  
+  if (!testName) return res.status(400).json({ message: 'Test name is required' });
+  
+  try {
+    const schoolId = req.user.schoolId || req.query.schoolId || req.body.schoolId;
+    if (!schoolId) return res.status(400).json({ message: 'School ID required' });
+    const school = await School.findById(schoolId);
+    if (!school) return res.status(404).json({ message: 'School not found' });
+    const conn = await getConnection(school.dbName);
+    const TestModel = createSchoolTest(conn);
+
+    // Date validation
+    let fromDate = null;
+    let untilDate = null;
+
+    if (availableFrom) {
+      fromDate = new Date(availableFrom);
+      if (isNaN(fromDate.getTime())) return res.status(400).json({ message: 'Invalid start date format' });
+    }
+
+    if (availableUntil) {
+      untilDate = new Date(availableUntil);
+      if (isNaN(untilDate.getTime())) return res.status(400).json({ message: 'Invalid end date format' });
+    }
+
+    if (fromDate && untilDate && untilDate <= fromDate) {
+      return res.status(400).json({ message: 'End date must be after start date' });
+    }
+
+    const test = new TestModel({
+      testName,
+      durationMinutes: durationMinutes || 60,
+      passScorePercentage: passScorePercentage || 50,
+      availableFrom: fromDate,
+      availableUntil: untilDate,
+      questionDistribution: Array.isArray(questionDistribution) ? questionDistribution : []
+    });
+
+    await test.save();
+    
+    try {
+      await logAudit({
+        action: 'create_test',
+        resourceType: 'test',
+        resourceId: test._id,
+        user: req.user,
+        details: { testName },
+        ip: req.ip,
+      });
+    } catch {}
+
+    res.status(201).json({ message: 'Test created successfully', test });
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to create test: ' + err.message });
+  }
+});
+
+// PUT /api/tests/:id
+// Update an existing test (Admin or Teacher)
+router.put('/:id', verifyToken, requireRole(['admin', 'teacher', 'superAdmin']), async (req, res) => {
+  const { testName, durationMinutes, passScorePercentage, availableFrom, availableUntil, questionDistribution } = req.body;
+  
+  try {
+    const schoolId = req.user.schoolId || req.query.schoolId || req.body.schoolId;
+    if (!schoolId) return res.status(400).json({ message: 'School ID required' });
+    const school = await School.findById(schoolId);
+    if (!school) return res.status(404).json({ message: 'School not found' });
+    const conn = await getConnection(school.dbName);
+    const TestModel = createSchoolTest(conn);
+
+    const test = await TestModel.findById(req.params.id);
+    if (!test) return res.status(404).json({ message: 'Test not found' });
+
+    if (testName) test.testName = testName;
+    if (durationMinutes !== undefined) test.durationMinutes = durationMinutes;
+    if (passScorePercentage !== undefined) test.passScorePercentage = passScorePercentage;
+    if (questionDistribution) test.questionDistribution = questionDistribution;
+
+    // Date validation for updates
+    if (availableFrom !== undefined) {
+      if (availableFrom === null || availableFrom === '') {
+        test.availableFrom = null;
+      } else {
+        const fromDate = new Date(availableFrom);
+        if (isNaN(fromDate.getTime())) return res.status(400).json({ message: 'Invalid start date format' });
+        test.availableFrom = fromDate;
+      }
+    }
+
+    if (availableUntil !== undefined) {
+      if (availableUntil === null || availableUntil === '') {
+        test.availableUntil = null;
+      } else {
+        const untilDate = new Date(availableUntil);
+        if (isNaN(untilDate.getTime())) return res.status(400).json({ message: 'Invalid end date format' });
+        test.availableUntil = untilDate;
+      }
+    }
+
+    if (test.availableFrom && test.availableUntil && test.availableUntil <= test.availableFrom) {
+      return res.status(400).json({ message: 'End date must be after start date' });
+    }
+
+    await test.save();
+
+    try {
+      await logAudit({
+        action: 'update_test',
+        resourceType: 'test',
+        resourceId: test._id,
+        user: req.user,
+        details: { testName: test.testName },
+        ip: req.ip,
+      });
+    } catch {}
+
+    res.json({ message: 'Test updated successfully', test });
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to update test: ' + err.message });
   }
 });
 
@@ -34,7 +162,9 @@ router.get('/', verifyToken, async (req, res) => {
     const pageSize = Math.min(100, parseInt(req.query.pageSize) || 20);
     const skip = (page - 1) * pageSize;
 
-    const school = await School.findById(req.user.schoolId);
+    const schoolId = req.user.schoolId || req.query.schoolId || req.body.schoolId;
+    if (!schoolId) return res.status(400).json({ message: 'School ID required' });
+    const school = await School.findById(schoolId);
     if (!school) return res.status(404).json({ message: 'School not found' });
     const conn = await getConnection(school.dbName);
     const TestModel = createSchoolTest(conn);
@@ -56,7 +186,9 @@ router.get('/', verifyToken, async (req, res) => {
 // Return a single test config by id (requires authentication)
 router.get('/:id', verifyToken, async (req, res) => {
   try {
-    const school = await School.findById(req.user.schoolId);
+    const schoolId = req.user.schoolId || req.query.schoolId || req.body.schoolId;
+    if (!schoolId) return res.status(400).json({ message: 'School ID required' });
+    const school = await School.findById(schoolId);
     if (!school) return res.status(404).json({ message: 'School not found' });
     const conn = await getConnection(school.dbName);
     const TestModel = createSchoolTest(conn);
@@ -131,7 +263,9 @@ router.get('/search', async (req, res) => {
 // Starts a test for a student: requires classId and subject query params, selects random questions per distribution and creates an Attempt record with startTime.
 router.get('/start/:testId', verifyToken, requireRole('student'), async (req, res) => {
   try {
-    const school = await School.findById(req.user.schoolId);
+    const schoolId = req.user.schoolId || req.query.schoolId || req.body.schoolId;
+    if (!schoolId) return res.status(400).json({ message: 'School ID required' });
+    const school = await School.findById(schoolId);
     if (!school) return res.status(404).json({ message: 'School not found' });
     const conn = await getConnection(school.dbName);
     const TestModel = createSchoolTest(conn);
@@ -239,7 +373,9 @@ router.post('/submit', verifyToken, requireRole('student'), async (req, res) => 
     return res.status(400).json({ message: 'attemptId and answers array required' });
 
   try {
-    const school = await School.findById(req.user.schoolId);
+    const schoolId = req.user.schoolId || req.query.schoolId || req.body.schoolId;
+    if (!schoolId) return res.status(400).json({ message: 'School ID required' });
+    const school = await School.findById(schoolId);
     if (!school) return res.status(404).json({ message: 'School not found' });
     const conn = await getConnection(school.dbName);
     const AttemptModel = createSchoolAttempt(conn);
@@ -328,7 +464,9 @@ router.post('/submit', verifyToken, requireRole('student'), async (req, res) => 
 // Returns all attempts with essay questions that need grading.
 router.get('/grading', verifyToken, requireRole(['admin', 'teacher']), async (req, res) => {
   try {
-    const school = await School.findById(req.user.schoolId);
+    const schoolId = req.user.schoolId || req.query.schoolId || req.body.schoolId;
+    if (!schoolId) return res.status(400).json({ message: 'School ID required' });
+    const school = await School.findById(schoolId);
     if (!school) return res.status(404).json({ message: 'School not found' });
     const conn = await getConnection(school.dbName);
     const AttemptModel = createSchoolAttempt(conn);
@@ -365,7 +503,9 @@ router.post('/grading', verifyToken, requireRole(['admin', 'teacher']), async (r
     return res.status(400).json({ message: 'attemptId, questionId, and grade are required' });
 
   try {
-    const school = await School.findById(req.user.schoolId);
+    const schoolId = req.user.schoolId || req.query.schoolId || req.body.schoolId;
+    if (!schoolId) return res.status(400).json({ message: 'School ID required' });
+    const school = await School.findById(schoolId);
     if (!school) return res.status(404).json({ message: 'School not found' });
     const conn = await getConnection(school.dbName);
     const AttemptModel = createSchoolAttempt(conn);

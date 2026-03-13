@@ -31,6 +31,16 @@ There are two supported flows for creating a new school:
 - `SCHOOL_OTP_TTL_MINUTES` - OTP expiration in minutes (default 15)
 - `SCHOOL_OTP_LENGTH` - OTP length (default 6)
 
+## Codebase Architecture and Recent Changes
+
+### Authentication & Role-Based Access Control (RBAC)
+Recent updates to the codebase overhauled the centralized authentication and permission system to support multi-tenant schools robustly:
+- **Token Verification:** The backend includes robust JWT verification that supports fallback development secrets and accurately extracts a user's targeted `schoolId` and applicable `role` context based on their memberships (`backend/middleware/auth.js`). 
+- **SuperAdmin Enhancements:** A `superAdmin` role is explicitly granted universal permission across all API actions (`view_audit`, `manage_classes`, `manage_users`, etc.). 
+- **Expanded Token Payloads:** The authentication service explicitly embeds user roles directly in the JWT payload to assist the frontend with strict routing and rendering of administrative features (`backend/services/authService.js`).
+- **Frontend Context:** The React app expertly manages auth context (`AuthContext.jsx`), including automated redirection to the landing page on session invalidation, and processes API requests natively via a unified `api.js` wrapper stripped of unnecessary `Content-Type` properties for GET methods.
+- **Admin Management UI:** Newly implemented React frontend components (`AdminDashboard.jsx`, `EnrollmentManagement.jsx`, `UserManagement.jsx`) securely consume these properties via `ProtectedRoute.jsx`. This architecture restricts critical administrative and school on-boarding flows entirely to `admin` and `superAdmin` accounts.
+
 ## Migration
 
 A migration script was added to move existing system-level users, classrooms, questions and tests into per-school databases.

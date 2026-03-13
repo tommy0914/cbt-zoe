@@ -1,4 +1,5 @@
 import React, { useState, useEffect, lazy, Suspense } from 'react';
+import { useLocation } from 'react-router-dom';
 import api from '../services/api';
 import UserSearch from '../components/UserSearch';
 import ExportResults from '../components/ExportResults';
@@ -12,7 +13,14 @@ const UserManagement = lazy(() => import('../components/UserManagement'));
 const EnrollmentManagement = lazy(() => import('../components/EnrollmentManagement'));
 
 function AdminDashboard() {
-  const token = JSON.parse(localStorage.getItem('auth'))?.token;
+  const auth = JSON.parse(localStorage.getItem('auth'));
+  const token = auth?.token;
+  const user = auth?.user;
+  const isSuperAdmin = user?.role === 'superAdmin';
+
+  const location = useLocation();
+  const passedSchoolId = location.state?.schoolId;
+
   const [overall, setOverall] = useState(null);
   const [classes, setClasses] = useState([]);
   const [selectedClassForExport, setSelectedClassForExport] = useState(null);
@@ -28,9 +36,31 @@ function AdminDashboard() {
   const [tests, setTests] = useState([]);
   const [editingTest, setEditingTest] = useState(null);
 
+  // School selection for Super Admins
+  const [allSchools, setAllSchools] = useState([]);
+  const [selectedSchoolId, setSelectedSchoolId] = useState(passedSchoolId || '');
+
+  async function fetchAllSchools() {
+    try {
+      const data = await api.get('/api/schools', token);
+      if (data.schools) {
+        setAllSchools(data.schools);
+        // Default to first school if none selected or passed
+        if (data.schools.length > 0 && !selectedSchoolId && !passedSchoolId) {
+          setSelectedSchoolId(data.schools[0]._id);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to fetch schools', err);
+    }
+  }
+
   async function fetchTests() {
     try {
-      const data = await api.get('/api/tests/list', token);
+      const params = new URLSearchParams();
+      if (isSuperAdmin && selectedSchoolId) params.append('schoolId', selectedSchoolId);
+      const url = `/api/tests/list${params.toString() ? '?' + params.toString() : ''}`;
+      const data = await api.get(url);
       if (data.tests) setTests(data.tests);
     } catch (err) {
       console.error('Failed to fetch tests', err);
@@ -38,23 +68,40 @@ function AdminDashboard() {
   }
 
   useEffect(() => {
-    fetchClasses();
-    fetchTests();
-  }, [token]);
+    if (isSuperAdmin) {
+      fetchAllSchools();
+    }
+  }, [isSuperAdmin]);
+
+  useEffect(() => {
+    if (!isSuperAdmin || selectedSchoolId) {
+      fetchClasses();
+      fetchTests();
+    }
+  }, [token, selectedSchoolId]);
 
   async function fetchOverall() {
-    const data = await api.get('/api/reports/overall-performance', token); 
+    const params = new URLSearchParams();
+    if (isSuperAdmin && selectedSchoolId) params.append('schoolId', selectedSchoolId);
+    const url = `/api/reports/overall-performance${params.toString() ? '?' + params.toString() : ''}`;
+    const data = await api.get(url); 
     setOverall(data);
   }
 
   async function fetchDifficulty() {
-    const data = await api.get('/api/reports/question-difficulty', token); 
+    const params = new URLSearchParams();
+    if (isSuperAdmin && selectedSchoolId) params.append('schoolId', selectedSchoolId);
+    const url = `/api/reports/question-difficulty${params.toString() ? '?' + params.toString() : ''}`;
+    const data = await api.get(url); 
     setDifficulty(data);
   }
 
   async function fetchClasses() {
     try {
-      const data = await api.get('/api/classes', token);
+      const params = new URLSearchParams();
+      if (isSuperAdmin && selectedSchoolId) params.append('schoolId', selectedSchoolId);
+      const url = `/api/classes${params.toString() ? '?' + params.toString() : ''}`;
+      const data = await api.get(url);
       if (data.classes) setClasses(data.classes);
     } catch (err) {
       console.error('Failed to fetch classes', err);
@@ -64,7 +111,10 @@ function AdminDashboard() {
   async function createClass() {
     if (!newClassName) return alert('Enter class name');
     const subjects = newClassSubjects.split(',').map((s) => s.trim()).filter(Boolean);
-    const res = await api.post('/api/classes', { name: newClassName, subjects }, token);
+    const payload = { name: newClassName, subjects };
+    if (isSuperAdmin) payload.schoolId = selectedSchoolId;
+
+    const res = await api.post('/api/classes', payload, token);
     if (res.class) {
       setNewClassName('');
       setNewClassSubjects('');
@@ -76,14 +126,15 @@ function AdminDashboard() {
 
   async function addSubjectToClass(classId, subject) {
     if (!subject) return;
-    const res = await api.post(`/api/classes/${classId}/subjects`, { subject }, token);
+    const url = `/api/classes/${classId}/subjects`;
+    const res = await api.post(url, { subject, schoolId: isSuperAdmin ? selectedSchoolId : undefined }, token);
     if (res.class) fetchClasses();
     else alert(res.message || 'Failed to add subject');
   }
 
   async function removeSubjectFromClass(classId, subject) {
-    const res = await api.get(`/api/classes/${classId}`); // ensure exists 
-    const del = await fetch('/api/classes/' + classId + '/subjects/' + encodeURIComponent(subject), {
+    const schoolParam = isSuperAdmin ? `?schoolId=${selectedSchoolId}` : '';
+    const del = await fetch(`/api/classes/${classId}/subjects/${encodeURIComponent(subject)}${schoolParam}`, {
       method: 'DELETE',
       headers: { Authorization: token ? `Bearer ${token}` : '' },
     });
@@ -93,7 +144,8 @@ function AdminDashboard() {
   }
 
   async function deleteClass(classId) {
-    const del = await fetch('/api/classes/' + classId, {
+    const schoolParam = isSuperAdmin ? `?schoolId=${selectedSchoolId}` : '';
+    const del = await fetch(`/api/classes/${classId}${schoolParam}`, {
       method: 'DELETE',
       headers: { Authorization: token ? `Bearer ${token}` : '' },
     });
@@ -104,15 +156,18 @@ function AdminDashboard() {
 
   async function assignTeacher(classId, teacherId) {
     if (!teacherId) return alert('Enter teacher identifier');
-    // if teacherId looks like an ObjectId (24 hex chars), use directly; otherwise lookup by email
     let finalId = teacherId;
     if (!/^[0-9a-fA-F]{24}$/.test(teacherId)) {
-      const lookup = await api.get(`/api/users/search?email=${encodeURIComponent(teacherId)}`, token);
+      const schoolParam = isSuperAdmin ? `&schoolId=${selectedSchoolId}` : '';
+      const lookup = await api.get(`/api/users/search?email=${encodeURIComponent(teacherId)}${schoolParam}`, token);
       const found = lookup.users && lookup.users[0];
       if (!found) return alert('Teacher not found');
       finalId = found._id;
     }
-    const res = await api.post(`/api/classes/${classId}/teacher`, { teacherId: finalId }, token);
+    const res = await api.post(`/api/classes/${classId}/teacher`, { 
+      teacherId: finalId,
+      schoolId: isSuperAdmin ? selectedSchoolId : undefined 
+    }, token);
     if (res.class) fetchClasses();
     else alert(res.message || 'Failed to assign teacher');
   }
@@ -121,18 +176,23 @@ function AdminDashboard() {
     if (!userId) return alert('Enter user identifier');
     let finalId = userId;
     if (!/^[0-9a-fA-F]{24}$/.test(userId)) {
-      const lookup = await api.get(`/api/users/search?email=${encodeURIComponent(userId)}`, token);
+      const schoolParam = isSuperAdmin ? `&schoolId=${selectedSchoolId}` : '';
+      const lookup = await api.get(`/api/users/search?email=${encodeURIComponent(userId)}${schoolParam}`, token);
       const found = lookup.users && lookup.users[0];
       if (!found) return alert('User not found');
       finalId = found._id;
     }
-    const res = await api.post(`/api/classes/${classId}/members`, { userId: finalId }, token);
+    const res = await api.post(`/api/classes/${classId}/members`, { 
+      userId: finalId,
+      schoolId: isSuperAdmin ? selectedSchoolId : undefined 
+    }, token);
     if (res.class) fetchClasses();
     else alert(res.message || 'Failed to add member');
   }
 
   async function removeMember(classId, memberId) {
-    const del = await fetch('/api/classes/' + classId + '/members/' + memberId, {
+    const schoolParam = isSuperAdmin ? `?schoolId=${selectedSchoolId}` : '';
+    const del = await fetch(`/api/classes/${classId}/members/${memberId}${schoolParam}`, {
       method: 'DELETE',
       headers: { Authorization: token ? `Bearer ${token}` : '' },
     });
@@ -148,9 +208,20 @@ function AdminDashboard() {
   async function uploadFile() {
     if (!file) return alert('Select a file first');
     if (!token) return alert('Admin login required');
+    if (isSuperAdmin && !selectedSchoolId) return alert('Select a school first');
+
     const fd = new FormData();
     fd.append('file', file);
-    const res = await api.postForm('/api/questions/upload', fd, token);    
+    if (isSuperAdmin) {
+      fd.append('schoolId', selectedSchoolId);
+    }
+
+    // Pass schoolId in query too so auth middleware can resolve role/school
+    // before multipart/form-data body is parsed.
+    const uploadUrl = isSuperAdmin
+      ? `/api/questions/upload?schoolId=${encodeURIComponent(selectedSchoolId)}`
+      : '/api/questions/upload';
+    const res = await api.postForm(uploadUrl, fd, token);
     setUploadMsg(res.message || JSON.stringify(res));
   }
 
@@ -159,6 +230,47 @@ function AdminDashboard() {
   return (
     <div>
       <h3>🔧 Admin Dashboard</h3>
+
+      {isSuperAdmin && (
+        <div className="card" style={{ 
+          marginBottom: '30px', 
+          border: '3px solid #0284c7', 
+          background: '#f0f9ff',
+          boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
+        }}>
+          <h4 style={{ color: '#0369a1', marginTop: 0, fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '1.5rem' }}>🏫</span> Managing School (Super Admin)
+          </h4>
+          <p style={{ fontSize: '14px', color: '#0c4a6e', marginBottom: '12px', fontWeight: '500' }}>
+            All data below (classes, tests, questions) is for the selected school:
+          </p>
+          <select 
+            value={selectedSchoolId} 
+            onChange={(e) => setSelectedSchoolId(e.target.value)}
+            style={{ 
+              width: '100%', 
+              padding: '12px', 
+              borderRadius: '8px', 
+              border: '2px solid #0284c7',
+              fontSize: '16px',
+              fontWeight: 'bold',
+              color: '#0369a1',
+              cursor: 'pointer'
+            }}
+          >
+            <option value="">-- SELECT A SCHOOL TO MANAGE --</option>
+            {allSchools.map(s => (
+              <option key={s._id} value={s._id}>{s.name.toUpperCase()}</option>
+            ))}
+          </select>
+          {!selectedSchoolId && (
+            <p style={{ color: '#e11d48', fontSize: '13px', marginTop: '8px', fontWeight: 'bold' }}>
+              ⚠️ Please select a school to start managing its data.
+            </p>
+          )}
+        </div>
+      )}
+
       <div className="card" style={{ marginBottom: '20px' }}>
         <h4>Analytics & Reports</h4>
         <div style={{ display: 'flex', gap: '12px' }}>
@@ -183,7 +295,7 @@ function AdminDashboard() {
           {showQuestionForm ? 'Hide Question Form' : 'Create New Question Manually'}
         </button>
         <Suspense fallback={loadingSuspense}>
-          {showQuestionForm && <QuestionForm token={token} />}
+          {showQuestionForm && <QuestionForm token={token} schoolId={isSuperAdmin ? selectedSchoolId : undefined} />}
         </Suspense>
       </div>
       <div style={{ marginTop: 12 }}>
@@ -191,7 +303,7 @@ function AdminDashboard() {
           {showGradingDashboard ? 'Hide Grading Dashboard' : 'View Essays for Grading'}
         </button>
         <Suspense fallback={loadingSuspense}>
-          {showGradingDashboard && <GradingDashboard token={token} />}     
+          {showGradingDashboard && <GradingDashboard token={token} schoolId={isSuperAdmin ? selectedSchoolId : undefined} />}     
         </Suspense>
       </div>
       <div style={{ marginTop: 12 }}>
@@ -199,7 +311,7 @@ function AdminDashboard() {
           {showAnalyticsDashboard ? 'Hide Analytics' : 'Show Analytics Dashboard'}
         </button>
         <Suspense fallback={loadingSuspense}>
-          {showAnalyticsDashboard && <AnalyticsDashboard token={token} />} 
+          {showAnalyticsDashboard && <AnalyticsDashboard token={token} schoolId={isSuperAdmin ? selectedSchoolId : undefined} />} 
         </Suspense>
       </div>
       <div style={{ marginTop: 12 }}>
@@ -207,7 +319,7 @@ function AdminDashboard() {
           {showTestForm ? 'Hide Test Form' : 'Create New Test'}
         </button>
         <Suspense fallback={loadingSuspense}>
-          {showTestForm && <TestForm token={token} test={editingTest} onTestCreated={() => { fetchTests(); setShowTestForm(false); }} onTestUpdated={() => { fetchTests(); setEditingTest(null); setShowTestForm(false); }} />}  
+          {showTestForm && <TestForm token={token} test={editingTest} schoolId={isSuperAdmin ? selectedSchoolId : undefined} onTestCreated={() => { fetchTests(); setShowTestForm(false); }} onTestUpdated={() => { fetchTests(); setEditingTest(null); setShowTestForm(false); }} />}  
         </Suspense>
       </div>
       <div style={{ marginTop: 12 }} className="card">
@@ -286,11 +398,11 @@ function AdminDashboard() {
           {showEnrollmentManagement ? 'Hide Enrollment Management' : 'Manage Student Enrollments'}
         </button>
         <Suspense fallback={loadingSuspense}>
-          {showEnrollmentManagement && <EnrollmentManagement />}
+          {showEnrollmentManagement && <EnrollmentManagement schoolId={isSuperAdmin ? selectedSchoolId : undefined} />}
         </Suspense>
       </div>
       <Suspense fallback={loadingSuspense}>
-        <UserManagement token={token} />
+        <UserManagement token={token} schoolId={isSuperAdmin ? selectedSchoolId : undefined} />
       </Suspense>
     </div>
   )

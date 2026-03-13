@@ -48,9 +48,13 @@ router.post('/upload', verifyToken, requirePermission('manage_questions'), uploa
   }
 
   try {
-    // Use per-school Question model
-    const schoolId = req.user?.schoolId;
-    if (!schoolId) return res.status(400).json({ message: 'No schoolId associated with user' });
+    // Determine school DB: prefer req.user.schoolId, fall back to query/body for superAdmins
+    let schoolId = req.user?.schoolId || req.query.schoolId || req.body.schoolId;
+    
+    if (!schoolId) {
+      return res.status(400).json({ message: 'No schoolId associated with user or provided in request' });
+    }
+    
     const school = await School.findById(schoolId);
     if (!school) return res.status(404).json({ message: 'School not found' });
     const conn = await getConnection(school.dbName);
@@ -103,8 +107,12 @@ router.post('/upload', verifyToken, requirePermission('manage_questions'), uploa
 // @access  Admin
 router.post('/', verifyToken, requirePermission('manage_questions'), async (req, res) => {
   try {
-    const schoolId = req.user?.schoolId;
-    if (!schoolId) return res.status(400).json({ message: 'No schoolId associated with user' });
+    let schoolId = req.user?.schoolId || req.query.schoolId || req.body.schoolId;
+    
+    if (!schoolId) {
+      return res.status(400).json({ message: 'No schoolId associated with user or provided in request' });
+    }
+    
     const school = await School.findById(schoolId);
     if (!school) return res.status(404).json({ message: 'School not found' });
     const conn = await getConnection(school.dbName);

@@ -21,6 +21,7 @@ class AuthService {
       userId: user._id,
       email: user.email,
       name: user.name,
+      role: user.role,
       schools: user.schools.map(s => ({ schoolId: s.schoolId, role: s.role })),
       type: 'access'
     };

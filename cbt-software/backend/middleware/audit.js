@@ -26,10 +26,10 @@ module.exports = function auditMiddleware(req, res, next) {
         role: req.user ? req.user.role : undefined,
         schoolId: req.user ? req.user.schoolId : undefined,
         method: req.method,
-        path: req.originalUrl || req.url,
+        path: req.originalUrl || req.path || req.url,
         meta: {
-          query: req.query || undefined,
-          body: redact(req.body),
+          query: req.query && Object.keys(req.query).length ? req.query : undefined,
+          body: req.body && Object.keys(req.body).length ? redact(req.body) : undefined,
         },
         statusCode: res.statusCode,
         ip: req.ip || req.headers['x-forwarded-for'] || undefined,

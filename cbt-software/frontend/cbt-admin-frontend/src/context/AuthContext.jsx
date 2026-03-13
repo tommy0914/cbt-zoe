@@ -44,6 +44,8 @@ export const AuthProvider = ({ children }) => {
       localStorage.removeItem('auth');
       setUser(null);
       setIsAuthenticated(false);
+      // Redirect to landing page
+      window.location.href = '/';
     }
   };
 
