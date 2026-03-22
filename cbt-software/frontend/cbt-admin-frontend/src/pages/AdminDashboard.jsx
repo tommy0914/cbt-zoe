@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom';
 import api from '../services/api';
 import UserSearch from '../components/UserSearch';
 import ExportResults from '../components/ExportResults';
+import AuditLogs from '../components/AuditLogs';
 
 // Lazy load heavy components
 const QuestionForm = lazy(() => import('../components/QuestionForm'));
@@ -33,6 +34,7 @@ function AdminDashboard() {
   const [showAnalyticsDashboard, setShowAnalyticsDashboard] = useState(false);
   const [showTestForm, setShowTestForm] = useState(false);
   const [showEnrollmentManagement, setShowEnrollmentManagement] = useState(false);
+  const [showAuditLogs, setShowAuditLogs] = useState(false);
   const [tests, setTests] = useState([]);
   const [editingTest, setEditingTest] = useState(null);
 
@@ -401,6 +403,30 @@ function AdminDashboard() {
           {showEnrollmentManagement && <EnrollmentManagement schoolId={isSuperAdmin ? selectedSchoolId : undefined} />}
         </Suspense>
       </div>
+
+      {isSuperAdmin && (
+        <div style={{ marginTop: 12 }}>
+          <button 
+            onClick={() => setShowAuditLogs(!showAuditLogs)}
+            style={{ 
+              background: '#0f766e', 
+              color: 'white', 
+              border: 'none', 
+              padding: '10px 16px', 
+              borderRadius: '6px', 
+              cursor: 'pointer', 
+              fontWeight: 'bold',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+            }}
+          >
+            {showAuditLogs ? 'Hide Audit Logs' : '🛡️ Monitor System Audit Logs'}
+          </button>
+          <Suspense fallback={loadingSuspense}>
+            {showAuditLogs && <AuditLogs token={token} />}
+          </Suspense>
+        </div>
+      )}
+
       <Suspense fallback={loadingSuspense}>
         <UserManagement token={token} schoolId={isSuperAdmin ? selectedSchoolId : undefined} />
       </Suspense>

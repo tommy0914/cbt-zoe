@@ -16,6 +16,75 @@ const StudentResults = ({ classId, className, onClose }) => {
   const [showReportCard, setShowReportCard] = useState(null);
   const [reportCardData, setReportCardData] = useState(null);
 
+  // State for exam rescheduling
+  const [rescheduleSearch, setRescheduleSearch] = useState('');
+  const [rescheduleStudentId, setRescheduleStudentId] = useState('');
+  const [rescheduleTestId, setRescheduleTestId] = useState('');
+  const [rescheduleDate, setRescheduleDate] = useState('');
+  const [rescheduleMessage, setRescheduleMessage] = useState('');
+  const [tests, setTests] = useState([]);
+
+  // Fetch tests for the class
+  useEffect(() => {
+    const fetchTests = async () => {
+      try {
+        const response = await fetch(`/api/tests?pageSize=100`, {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setTests(data.tests || []);
+        }
+      } catch (error) {}
+    };
+    if (classId) {
+      fetchTests();
+    }
+  }, [classId]);
+
+  const handleReschedule = async () => {
+    if (!rescheduleStudentId || !rescheduleTestId || !rescheduleDate) {
+      setRescheduleMessage('Error: All fields are required.');
+      return;
+    }
+    try {
+      setRescheduleMessage('Saving exception...');
+      const response = await fetch(`/api/tests/${rescheduleTestId}/exceptions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          userId: rescheduleStudentId,
+          availableUntil: new Date(rescheduleDate).toISOString()
+        })
+      });
+
+      if (response.ok) {
+        setRescheduleMessage('Exam successfully rescheduled! ✓');
+        setTimeout(() => {
+          setRescheduleMessage('');
+          setRescheduleSearch('');
+          setRescheduleStudentId('');
+          setRescheduleTestId('');
+          setRescheduleDate('');
+        }, 3000);
+      } else {
+        const err = await response.json();
+        setRescheduleMessage(`Error: ${err.message}`);
+      }
+    } catch (error) {
+       setRescheduleMessage('Error: Failed to reschedule exam.');
+    }
+  };
+
+  const filteredStudentsForReschedule = students.filter(s => 
+    s.email.toLowerCase().includes(rescheduleSearch.toLowerCase()) || 
+    s.name.toLowerCase().includes(rescheduleSearch.toLowerCase()) || 
+    s._id.includes(rescheduleSearch) 
+  );
+
   // Fetch class students
   useEffect(() => {
     const fetchStudents = async () => {
@@ -340,6 +409,60 @@ const StudentResults = ({ classId, className, onClose }) => {
                 >
                   {generating ? '⏳ Generating...' : '🚀 Generate Result'}
                 </button>
+              </div>
+            </div>
+
+            <div className="generate-section" style={{marginTop: '20px'}}>
+              <h3>Reschedule / Retake Exam</h3>
+              <div className="generate-form">
+                <input 
+                  type="text" 
+                  placeholder="Search student by ID, Name, or Email..." 
+                  value={rescheduleSearch}
+                  onChange={(e) => {
+                     setRescheduleSearch(e.target.value);
+                     setRescheduleStudentId('');
+                  }}
+                  className="student-select"
+                />
+                {(rescheduleSearch && !rescheduleStudentId) && (
+                  <div style={{maxHeight:'150px', overflowY:'auto', background:'#fff', border:'1px solid #e2e8f0', borderRadius:'6px', padding:'4px', marginBottom:'10px', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}}>
+                    {filteredStudentsForReschedule.map(s => (
+                       <div key={s._id} style={{padding:'8px', cursor:'pointer', borderBottom:'1px solid #f1f5f9'}} onClick={() => { setRescheduleStudentId(s._id); setRescheduleSearch(`${s.name} (${s._id})`); }}>
+                         <strong>{s.name}</strong> <span style={{color: '#64748b', fontSize: '0.9em'}}>- {s._id}</span>
+                       </div>
+                    ))}
+                    {filteredStudentsForReschedule.length === 0 && <div style={{padding:'8px', color:'#94a3b8'}}>No student found.</div>}
+                  </div>
+                )}
+                
+                <select value={rescheduleTestId} onChange={e => setRescheduleTestId(e.target.value)} className="student-select">
+                  <option value="">-- Select Test to Reschedule --</option>
+                  {tests.map(t => (
+                    <option key={t._id} value={t._id}>{t.testName}</option>
+                  ))}
+                </select>
+
+                <div style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
+                  <label style={{color: '#475569', fontWeight: '500', minWidth: '130px'}}>New Deadline:</label>
+                  <input 
+                    type="datetime-local" 
+                    value={rescheduleDate}
+                    onChange={e => setRescheduleDate(e.target.value)}
+                    className="student-select" 
+                    style={{marginBottom: '0', flex: 1}}
+                  />
+                </div>
+
+                <button 
+                  className="generate-btn" 
+                  onClick={handleReschedule} 
+                  disabled={!rescheduleStudentId || !rescheduleTestId || !rescheduleDate}
+                  style={{marginTop: '10px'}}
+                >
+                  📅 Apply New Deadline
+                </button>
+                {rescheduleMessage && <div style={{marginTop: '10px', fontWeight: '500', color: rescheduleMessage.includes('Error') ? '#ef4444' : '#10b981'}}>{rescheduleMessage}</div>}
               </div>
             </div>
 

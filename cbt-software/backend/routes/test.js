@@ -281,7 +281,20 @@ router.get('/start/:testId', verifyToken, requireRole('student'), async (req, re
     if (test.availableFrom && now < test.availableFrom) {
       return res.status(403).json({ message: 'This test is not yet available.' });
     }
-    if (test.availableUntil && now > test.availableUntil) {
+
+    // Check global deadline and student exceptions
+    const userException = (test.studentExceptions || []).find(e => e.userId === req.user._id.toString());
+    let isAvailable = true;
+    
+    if (userException && userException.availableUntil) {
+      if (now > userException.availableUntil) {
+        isAvailable = false;
+      }
+    } else if (test.availableUntil && now > test.availableUntil) {
+      isAvailable = false;
+    }
+    
+    if (!isAvailable) {
       return res.status(403).json({ message: 'This test is no longer available.' });
     }
 
@@ -527,6 +540,59 @@ router.post('/grading', verifyToken, requireRole(['admin', 'teacher']), async (r
     res.json({ message: 'Grade submitted successfully', attempt });
   } catch (err) {
     res.status(500).json({ message: 'Failed to submit grade: ' + err.message });
+  }
+});
+
+// POST /api/tests/:id/exceptions
+// Add or update a student-specific deadline exception
+router.post('/:id/exceptions', verifyToken, requireRole(['admin', 'teacher', 'superAdmin']), async (req, res) => {
+  const { userId, availableUntil } = req.body;
+  
+  if (!userId || !availableUntil) {
+    return res.status(400).json({ message: 'userId and availableUntil are required' });
+  }
+
+  try {
+    const schoolId = req.user.schoolId || req.query.schoolId || req.body.schoolId;
+    if (!schoolId) return res.status(400).json({ message: 'School ID required' });
+    const school = await School.findById(schoolId);
+    if (!school) return res.status(404).json({ message: 'School not found' });
+    const conn = await getConnection(school.dbName);
+    const TestModel = createSchoolTest(conn);
+
+    const test = await TestModel.findById(req.params.id);
+    if (!test) return res.status(404).json({ message: 'Test not found' });
+
+    const untilDate = new Date(availableUntil);
+    if (isNaN(untilDate.getTime())) return res.status(400).json({ message: 'Invalid date format' });
+
+    // Initialize array if not exists
+    if (!test.studentExceptions) test.studentExceptions = [];
+
+    // Check if exception already exists
+    const existingIndex = test.studentExceptions.findIndex(e => e.userId === userId);
+    if (existingIndex >= 0) {
+      test.studentExceptions[existingIndex].availableUntil = untilDate;
+    } else {
+      test.studentExceptions.push({ userId, availableUntil: untilDate });
+    }
+
+    await test.save();
+
+    try {
+      await logAudit({
+        action: 'update_test_exception',
+        resourceType: 'test',
+        resourceId: test._id,
+        user: req.user,
+        details: { userId, availableUntil },
+        ip: req.ip,
+      });
+    } catch {}
+
+    res.json({ message: 'Exception added/updated successfully', test });
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to add exception: ' + err.message });
   }
 });
 

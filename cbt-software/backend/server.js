@@ -5,6 +5,7 @@ const cors = require('cors');
 const mongoose = require('mongoose');
 const session = require('express-session');
 const passport = require('passport');
+const path = require('path');
 
 // Initialize passport configuration
 require('./services/passport-setup');
@@ -19,6 +20,7 @@ const adminRoute = require('./routes/admin');
 const enrollmentRoute = require('./routes/enrollment');
 const quickwinsRoute = require('./routes/quickwins');
 const attendanceRoute = require('./routes/attendance');
+const materialsRoute = require('./routes/materials');
 const auditMiddleware = require('./middleware/audit');
 
 const app = express();
@@ -78,6 +80,10 @@ app.use('/api/admin', adminRoute);
 app.use('/api/enrollment', enrollmentRoute);
 app.use('/api/quickwins', quickwinsRoute);
 app.use('/api/attendance', attendanceRoute);
+app.use('/api/materials', materialsRoute);
+
+// Serve uploads directory statically
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Health check
 app.get('/health', (req, res) => res.json({ status: 'ok' }));

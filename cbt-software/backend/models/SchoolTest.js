@@ -12,6 +12,13 @@ module.exports = function (conn) {
     questionDistribution: { type: [QuestionDistributionSchema], default: [] },
     availableFrom: { type: Date, default: null },
     availableUntil: { type: Date, default: null },
+    studentExceptions: {
+      type: [{
+        userId: { type: String, required: true },
+        availableUntil: { type: Date, required: true }
+      }],
+      default: []
+    },
     createdAt: { type: Date, default: Date.now },
   });
 

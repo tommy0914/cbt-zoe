@@ -9,6 +9,7 @@ import AnalyticsDashboard from '../components/AnalyticsDashboard'
 import StudentResults from '../components/StudentResults'
 import TestBuilder from '../components/TestBuilder'
 import AttendanceTracker from '../components/AttendanceTracker'
+import StudyMaterials from '../components/StudyMaterials'
 
 // Lazy load
 const QuestionForm = lazy(() => import('../components/QuestionForm'));
@@ -422,6 +423,9 @@ export default function TeacherClasses() {
                 
                 {/* Attendance Tracker */}
                 <AttendanceTracker classId={c._id} token={token} />
+                
+                {/* Resource Library */}
+                <StudyMaterials classId={c._id} isTeacher={true} />
               </div>
             )}
           </div>

@@ -4,6 +4,7 @@ import Announcements from '../components/Announcements'
 import Leaderboard from '../components/Leaderboard'
 import Certificates from '../components/Certificates'
 import TestTaking from '../components/TestTaking'
+import StudyMaterials from '../components/StudyMaterials'
 
 export default function StudentTest() {
   const token = JSON.parse(localStorage.getItem('auth'))?.token;
@@ -432,6 +433,7 @@ export default function StudentTest() {
           <Announcements classId={selectedClassId} isTeacher={false} />
           <Leaderboard classId={selectedClassId} studentId={token ? JSON.parse(localStorage.getItem('auth'))?.userId : null} isStudent={true} />
           <Certificates studentId={token ? JSON.parse(localStorage.getItem('auth'))?.userId : null} isStudent={true} />
+          <StudyMaterials classId={selectedClassId} isTeacher={false} />
         </>
       )}
         </>
