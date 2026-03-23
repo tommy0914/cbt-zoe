@@ -9,11 +9,6 @@ export default function CreateSchool() {
   const [msg, setMsg] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // if user already belongs to a school or is an admin, redirect away
-  if (user?.schools && user.schools.length > 0) {
-    return <Navigate to="/join-school" replace />;
-  }
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setMsg(null);

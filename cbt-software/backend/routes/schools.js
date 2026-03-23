@@ -74,12 +74,8 @@ router.post('/:id/join', isAuthenticated, async (req, res) => {
   }
 });
 
-// Direct school creation route (self-service) enabled via env var
+// Direct school creation route (self-service)
 router.post('/create-direct', isAuthenticated, async (req, res) => {
-  if (process.env.ALLOW_DIRECT_SCHOOL_CREATE !== 'true') {
-    return res.status(403).json({ message: 'Direct school creation is disabled' });
-  }
-
   try {
     const { name } = req.body;
     if (!name) {

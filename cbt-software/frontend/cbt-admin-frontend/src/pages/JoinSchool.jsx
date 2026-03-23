@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
@@ -122,11 +122,9 @@ export default function JoinSchool() {
         <div className="card">
           <h2>School Directory</h2>
           <p>Browse and manage schools within the system.</p>
-          {import.meta.env.VITE_ALLOW_DIRECT_SCHOOL_CREATE === 'true' && (
-            <p style={{ fontSize: '13px' }}>
-              Can&apos;t find your school? <a href="/create-school" style={{ color: '#7c3aed' }}>Create one</a>
-            </p>
-          )}
+          <p style={{ fontSize: '13px' }}>
+            Can&apos;t find your school? <Link to="/create-school" style={{ color: '#7c3aed', fontWeight: 'bold' }}>Create one</Link>
+          </p>
           {loading && <p>Loading schools...</p>}
           <ul style={{ listStyle: 'none', padding: 0 }}>
             {schools.map(school => {
