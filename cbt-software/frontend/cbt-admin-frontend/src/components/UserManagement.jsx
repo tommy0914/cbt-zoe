@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import api from '../services/api';
+import UserSearch from './UserSearch';
 
 export default function UserManagement({ token, schoolId }) {
   const [teacherName, setTeacherName] = useState('');
@@ -10,6 +11,7 @@ export default function UserManagement({ token, schoolId }) {
   const [studentEmail, setStudentEmail] = useState('');
   const [studentMatricNumber, setStudentMatricNumber] = useState('');
   const [studentLevel, setStudentLevel] = useState('');
+  const [assignTeacherEmail, setAssignTeacherEmail] = useState('');
   const [message, setMessage] = useState('');
 
   async function createTeacher(e) {
@@ -29,6 +31,18 @@ export default function UserManagement({ token, schoolId }) {
       setTeacherStaffId('');
     } catch (err) {
       setMessage(err.message || 'Failed to create teacher');
+    }
+  }
+
+  async function assignTeacher(e) {
+    e.preventDefault();
+    if (!assignTeacherEmail) return;
+    try {
+      const res = await api.post('/api/admin/assign-teacher', { email: assignTeacherEmail }, token);
+      setMessage(res.message || 'Teacher assigned successfully');
+      setAssignTeacherEmail('');
+    } catch (err) {
+      setMessage(err.message || 'Failed to assign teacher');
     }
   }
 
@@ -99,6 +113,25 @@ export default function UserManagement({ token, schoolId }) {
               <input type="text" value={studentLevel} onChange={(e) => setStudentLevel(e.target.value)} required />
             </div>
             <button type="submit">Create Student</button>
+          </form>
+        </div>
+        <div style={{ flex: 1 }}>
+          <h5>Assign Existing Teacher</h5>
+          <p style={{ fontSize: '13px', color: '#666', marginBottom: '8px' }}>
+            If a user has already created an account on the platform, you can promote them to Teacher status in this school by selecting their email.
+          </p>
+          <form onSubmit={assignTeacher}>
+            <div style={{ marginBottom: '12px' }}>
+              <input 
+                 type="email"
+                 required
+                 value={assignTeacherEmail}
+                 onChange={(e) => setAssignTeacherEmail(e.target.value)}
+                 placeholder="Enter user's exact email address..." 
+                 style={{ width: '100%', padding: '8px', border: '1px solid #ccc', borderRadius: '4px' }}
+              />
+            </div>
+            <button type="submit" style={{ background: '#7c3aed' }}>Assign Teacher Role</button>
           </form>
         </div>
       </div>

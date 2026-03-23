@@ -51,7 +51,7 @@ router.post('/teachers', verifyToken, requirePermission('create_user'), validate
     const schoolId = req.user.schoolId; // Assuming admin's schoolId is in the token
 
     const newUser = await createUser(
-      { name, email, password: 'defaultPassword', role: 'teacher', department, staffId }, // Consider a more secure way to handle initial passwords
+      { name, email, password: 'defaultPassword', role: 'teacher', department, staffId }, 
       schoolId
     );
 
@@ -59,6 +59,45 @@ router.post('/teachers', verifyToken, requirePermission('create_user'), validate
   } catch (error) {
     console.error('Teacher creation failed:', error);
     res.status(500).json({ message: 'Failed to create teacher', error: error.message });
+  }
+});
+
+// Assign an existing user as a teacher to the school
+router.post('/assign-teacher', verifyToken, requirePermission('create_user'), async (req, res) => {
+  try {
+    const { email } = req.body;
+    const schoolId = req.user.schoolId;
+
+    if (!email) {
+      return res.status(400).json({ message: 'Email is required' });
+    }
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found in the global registry. Please create them first.' });
+    }
+
+    // Update their role in the current school
+    if (!user.schools) user.schools = [];
+    
+    const existingSchoolRecord = user.schools.find(s => s.schoolId && s.schoolId.toString() === schoolId.toString());
+    if (existingSchoolRecord) {
+      existingSchoolRecord.role = 'teacher';
+    } else {
+      user.schools.push({ schoolId, role: 'teacher' });
+    }
+
+    // Set as primary if they don't have one
+    if (!user.school || user.role === 'student' || !user.role) {
+      user.school = schoolId;
+      user.role = 'teacher';
+    }
+
+    await user.save();
+
+    res.json({ message: 'User successfully assigned as a teacher', user });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to assign teacher', error: error.message });
   }
 });
 
