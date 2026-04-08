@@ -26,7 +26,7 @@
     "minimist": "^1.2.8",
     "mongoose": "^9.0.0",
     "multer": "^2.0.2",
-    "nodemailer": "^6.9.14",
+    "nodemailer": "^8.0.5",
     "nodemailer-sendinblue-transport": "^2.0.1",
     "passport": "^0.7.0",
     "passport-local": "^1.0.0",
