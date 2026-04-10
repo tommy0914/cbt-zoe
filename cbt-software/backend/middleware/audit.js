@@ -24,16 +24,18 @@ module.exports = function auditMiddleware(req, res, next) {
         userId: req.user ? (req.user._id ? req.user._id.toString() : req.user.id) : undefined,
         username: req.user ? req.user.username : undefined,
         role: req.user ? req.user.role : undefined,
-        schoolId: req.user ? req.user.schoolId : undefined,
-        method: req.method,
-        path: req.originalUrl || req.path || req.url,
-        meta: {
-          query: req.query && Object.keys(req.query).length ? req.query : undefined,
-          body: req.body && Object.keys(req.body).length ? redact(req.body) : undefined,
+        action: `${req.method} ${req.originalUrl || req.path || req.url}`,
+        resourceType: 'API_ENDPOINT',
+        details: {
+          schoolId: req.user ? req.user.schoolId : undefined,
+          meta: {
+            query: req.query && Object.keys(req.query).length ? req.query : undefined,
+            body: req.body && Object.keys(req.body).length ? redact(req.body) : undefined,
+          },
+          statusCode: res.statusCode,
+          durationMs: Date.now() - start,
         },
-        statusCode: res.statusCode,
         ip: req.ip || req.headers['x-forwarded-for'] || undefined,
-        durationMs: Date.now() - start,
         createdAt: new Date(),
       };
       await Audit.create(entry);

@@ -197,8 +197,8 @@ class AuthService {
         userId: details.userId || null,
         action,
         details,
-        ipAddress: details.ipAddress,
-        timestamp: new Date()
+        ip: details.ipAddress,
+        createdAt: new Date()
       });
       await auditEntry.save();
     } catch (error) {
