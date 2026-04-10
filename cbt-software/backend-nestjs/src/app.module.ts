@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { APP_INTERCEPTOR } from '@nestjs/core';
 import { PrismaModule } from './prisma/prisma.module';
 import { UsersModule } from './modules/users/users.module';
 import { AuthModule } from './modules/auth/auth.module';
@@ -8,6 +9,9 @@ import { QuestionsModule } from './modules/questions/questions.module';
 import { TestsModule } from './modules/tests/tests.module';
 import { AttemptsModule } from './modules/attempts/attempts.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
+import { AnnouncementsModule } from './modules/announcements/announcements.module';
+import { AttendanceModule } from './modules/attendance/attendance.module';
+import { AuditInterceptor } from './common/interceptors/audit.interceptor';
 
 @Module({
   imports: [
@@ -20,6 +24,14 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
     TestsModule,
     AttemptsModule,
     AnalyticsModule,
+    AnnouncementsModule,
+    AttendanceModule,
+  ],
+  providers: [
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: AuditInterceptor,
+    },
   ],
 })
 export class AppModule {}
