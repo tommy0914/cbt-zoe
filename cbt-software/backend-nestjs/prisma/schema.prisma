@@ -1,0 +1,342 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  admin
+  teacher
+  student
+  superAdmin
+}
+
+enum QuestionType {
+  multiple_choice
+  true_false
+  short_answer
+  essay
+}
+
+enum Difficulty {
+  easy
+  medium
+  hard
+}
+
+enum AttemptStatus {
+  in_progress
+  submitted
+  graded
+}
+
+enum Priority {
+  low
+  medium
+  high
+}
+
+enum AttendanceStatus {
+  present
+  absent
+  late
+}
+
+model User {
+  id                    String    @id @default(uuid())
+  name                  String
+  email                 String    @unique
+  username              String?   @unique
+  password              String
+  role                  Role
+  mustChangePassword    Boolean   @default(false)
+  passwordResetToken    String?
+  passwordResetExpires  DateTime?
+  loginAttempts         Int       @default(0)
+  lockUntil             DateTime?
+  lastLogin             DateTime?
+  lastLoginIP           String?
+  lastLogout            DateTime?
+  passwordChangedAt     DateTime?
+  twoFactorEnabled      Boolean   @default(false)
+  twoFactorSecret       String?
+  isActive              Boolean   @default(true)
+  isEmailVerified       Boolean   @default(false)
+  emailVerificationToken String?
+  profilePicture        String?
+  schoolId              String?
+  school                School?   @relation("UserSchool", fields: [schoolId], references: [id])
+  managedSchools        School[]  @relation("SchoolAdmin")
+  superAdminSchools     School[]  @relation("SchoolSuperAdmin")
+  schoolRoles           UserSchoolRole[]
+  createdQuestions      Question[]
+  createdTests          Test[]
+  studentResults        StudentResult[] @relation("StudentResultStudent")
+  generatedResults      StudentResult[] @relation("StudentResultGenerator")
+  auditLogs             Audit[]
+  announcements         Announcement[]
+  attendanceTaken       Attendance[]    @relation("AttendanceTaker")
+  leaderboardEntries    Leaderboard[]
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  @@index([schoolId, role])
+}
+
+model School {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  dbName      String   @unique
+  adminId     String
+  admin       User     @relation("SchoolAdmin", fields: [adminId], references: [id])
+  superAdminId String
+  superAdmin  User     @relation("SchoolSuperAdmin", fields: [superAdminId], references: [id])
+  users       User[]   @relation("UserSchool")
+  userRoles   UserSchoolRole[]
+  classrooms  Classroom[]
+  studentResults StudentResult[]
+  announcements Announcement[]
+  leaderboards  Leaderboard[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model UserSchoolRole {
+  id       String @id @default(uuid())
+  userId   String
+  user     User   @relation(fields: [userId], references: [id])
+  schoolId String
+  school   School @relation(fields: [schoolId], references: [id])
+  role     Role
+  @@unique([userId, schoolId])
+}
+
+model Classroom {
+  id        String   @id @default(uuid())
+  name      String
+  schoolId  String
+  school    School   @relation(fields: [schoolId], references: [id])
+  tests         Test[]
+  results       StudentResult[]
+  announcements Announcement[]
+  attendance    Attendance[]
+  leaderboards  Leaderboard[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Question {
+  id            String       @id @default(uuid())
+  text          String
+  type          QuestionType @default(multiple_choice)
+  options       String[]
+  correctAnswer String
+  points        Int          @default(1)
+  explanation   String?
+  difficulty    Difficulty   @default(medium)
+  tags          String[]
+  createdById   String
+  createdBy     User         @relation(fields: [createdById], references: [id])
+  tests         Test[]       @relation("TestQuestions")
+  responses     Response[]
+  createdAt     DateTime     @default(now())
+}
+
+model Test {
+  id                String      @id @default(uuid())
+  title             String
+  description       String?
+  durationMinutes   Int
+  totalMarks        Int         @default(0)
+  passingMarks      Int         @default(1)
+  shuffleQuestions  Boolean     @default(false)
+  showAnswerAfterSubmit Boolean @default(true)
+  questions         Question[]  @relation("TestQuestions")
+  classId           String
+  classroom         Classroom   @relation(fields: [classId], references: [id])
+  createdById       String
+  createdBy         User        @relation(fields: [createdById], references: [id])
+  scheduledDate     DateTime?
+  scheduledEndDate   DateTime?
+  attempts          Attempt[]
+  leaderboards      Leaderboard[]
+  testAttemptMetrics TestAttemptMetric[]
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+}
+
+model Attempt {
+  id          String        @id @default(uuid())
+  studentId   String
+  testId      String
+  test        Test          @relation(fields: [testId], references: [id])
+  responses   Response[]
+  totalScore  Int           @default(0)
+  percentage  Int           @default(0)
+  startTime   DateTime      @default(now())
+  submitTime  DateTime?
+  status      AttemptStatus @default(in_progress)
+  feedback    String?
+  testAttemptMetrics TestAttemptMetric[]
+  createdAt   DateTime      @default(now())
+}
+
+model Response {
+  id            String   @id @default(uuid())
+  attemptId     String
+  attempt       Attempt  @relation(fields: [attemptId], references: [id])
+  questionId    String
+  question      Question @relation(fields: [questionId], references: [id])
+  answer        String?
+  isCorrect     Boolean  @default(false)
+  pointsAwarded Int      @default(0)
+}
+
+model StudentResult {
+  id                    String    @id @default(uuid())
+  studentId             String
+  student               User      @relation("StudentResultStudent", fields: [studentId], references: [id])
+  studentName           String
+  studentEmail          String
+  classId               String
+  classroom             Classroom @relation(fields: [classId], references: [id])
+  className             String
+  schoolId              String
+  school                School    @relation(fields: [schoolId], references: [id])
+  totalTestsTaken       Int       @default(0)
+  totalScoreObtained    Int       @default(0)
+  averageScore          Float     @default(0)
+  highestScore          Int       @default(0)
+  lowestScore           Int       @default(0)
+  totalQuestionsAttempted Int     @default(0)
+  totalQuestionsCorrect Int       @default(0)
+  correctPercentage     Float     @default(0)
+  subjectPerformance    SubjectPerformance[]
+  testAttemptMetrics    TestAttemptMetric[]
+  strengthAreas         String[]
+  weakAreas             String[]
+  passingRate           Float     @default(0)
+  overallGPA            Float     @default(0)
+  ranking               Int?
+  performanceGrade      String    @default("F")
+  generatedAt           DateTime  @default(now())
+  generatedById         String?
+  generatedBy           User?     @relation("StudentResultGenerator", fields: [generatedById], references: [id])
+  updatedAt             DateTime  @updatedAt
+  notes                 String?
+}
+
+model SubjectPerformance {
+  id                String        @id @default(uuid())
+  studentResultId   String
+  studentResult     StudentResult @relation(fields: [studentResultId], references: [id])
+  subject           String
+  totalTests        Int           @default(0)
+  averageScore      Float         @default(0)
+  highestScore      Int           @default(0)
+  lowestScore       Int           @default(0)
+  totalQuestions    Int           @default(0)
+  correctAnswers    Int           @default(0)
+  passingRate       Float         @default(0)
+  performanceGrade  String        @default("F")
+}
+
+model TestAttemptMetric {
+  id              String        @id @default(uuid())
+  studentResultId String
+  studentResult   StudentResult @relation(fields: [studentResultId], references: [id])
+  testId          String
+  test            Test          @relation(fields: [testId], references: [id])
+  testName        String
+  subject         String?
+  attemptId       String
+  attempt       Attempt       @relation(fields: [attemptId], references: [id])
+  score           Int
+  totalQuestions  Int
+  correctAnswers  Int
+  duration        Int?
+  completedAt     DateTime?
+  status          String        @default("completed")
+  isPassed        Boolean       @default(false)
+}
+
+model Audit {
+  id            String    @id @default(uuid())
+  action        String
+  resourceType  String?
+  resourceId    String?
+  userId        String?
+  user          User?     @relation(fields: [userId], references: [id])
+  username      String?
+  role          String?
+  details       Json?
+  ip            String?
+  createdAt     DateTime  @default(now())
+}
+
+model Announcement {
+  id            String    @id @default(uuid())
+  title         String
+  content       String
+  classId       String
+  classroom     Classroom @relation(fields: [classId], references: [id])
+  schoolId      String?
+  school        School?   @relation(fields: [schoolId], references: [id])
+  createdById   String
+  createdBy     User      @relation(fields: [createdById], references: [id])
+  attachmentUrl String?
+  priority      Priority  @default(low)
+  expiresAt     DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  @@index([expiresAt])
+}
+
+model Attendance {
+  id            String            @id @default(uuid())
+  classId       String
+  classroom     Classroom         @relation(fields: [classId], references: [id])
+  date          String
+  takenById     String
+  takenBy       User              @relation("AttendanceTaker", fields: [takenById], references: [id])
+  records       AttendanceRecord[]
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  @@unique([classId, date])
+}
+
+model AttendanceRecord {
+  id            String            @id @default(uuid())
+  attendanceId  String
+  attendance    Attendance        @relation(fields: [attendanceId], references: [id])
+  studentId     String
+  status        AttendanceStatus  @default(present)
+  note          String?
+}
+
+model Leaderboard {
+  id              String    @id @default(uuid())
+  studentId       String
+  student         User      @relation(fields: [studentId], references: [id])
+  classId         String
+  classroom       Classroom @relation(fields: [classId], references: [id])
+  schoolId        String?
+  school          School?   @relation(fields: [schoolId], references: [id])
+  testId          String?
+  test            Test?     @relation(fields: [testId], references: [id])
+  studentName     String?
+  studentEmail    String?
+  totalScore      Int       @default(0)
+  averageScore    Float     @default(0)
+  testsAttempted  Int       @default(0)
+  passCount       Int       @default(0)
+  points          Int       @default(0)
+  rank            Int?
+  streak          Int       @default(0)
+  lastUpdated     DateTime  @default(now())
+  @@index([classId, averageScore(sort: Desc)])
+  @@index([testId, totalScore(sort: Desc)])
+  @@index([points(sort: Desc)])
+}
