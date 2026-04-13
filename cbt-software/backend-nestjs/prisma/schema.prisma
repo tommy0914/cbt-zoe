@@ -45,6 +45,12 @@ enum AttendanceStatus {
   late
 }
 
+enum EnrollmentStatus {
+  pending
+  approved
+  rejected
+}
+
 model User {
   id                    String    @id @default(uuid())
   name                  String
@@ -80,6 +86,10 @@ model User {
   announcements         Announcement[]
   attendanceTaken       Attendance[]    @relation("AttendanceTaker")
   leaderboardEntries    Leaderboard[]
+  teachingClasses       Classroom[]     @relation("ClassroomTeacher")
+  memberOfClasses       Classroom[]     @relation("ClassroomMembers")
+  enrollmentRequests    EnrollmentRequest[] @relation("StudentEnrollment")
+  handledEnrollments    EnrollmentRequest[] @relation("AdminEnrollment")
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
   @@index([schoolId, role])
@@ -99,6 +109,7 @@ model School {
   studentResults StudentResult[]
   announcements Announcement[]
   leaderboards  Leaderboard[]
+  enrollmentRequests EnrollmentRequest[]
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 }
@@ -114,17 +125,38 @@ model UserSchoolRole {
 }
 
 model Classroom {
-  id        String   @id @default(uuid())
-  name      String
-  schoolId  String
-  school    School   @relation(fields: [schoolId], references: [id])
+  id            String   @id @default(uuid())
+  name          String
+  schoolId      String
+  school        School   @relation(fields: [schoolId], references: [id])
+  subjects      String[] @default([])
+  teacherId     String?
+  teacher       User?    @relation("ClassroomTeacher", fields: [teacherId], references: [id])
+  members       User[]   @relation("ClassroomMembers")
   tests         Test[]
   results       StudentResult[]
   announcements Announcement[]
   attendance    Attendance[]
   leaderboards  Leaderboard[]
+  enrollmentRequests EnrollmentRequest[]
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+}
+
+model EnrollmentRequest {
+  id              String           @id @default(uuid())
+  studentId       String
+  student         User             @relation("StudentEnrollment", fields: [studentId], references: [id])
+  classId         String
+  classroom       Classroom        @relation(fields: [classId], references: [id])
+  schoolId        String
+  school          School           @relation(fields: [schoolId], references: [id])
+  status          EnrollmentStatus @default(pending)
+  requestedAt     DateTime         @default(now())
+  respondedAt     DateTime?
+  respondedById   String?
+  respondedBy     User?            @relation("AdminEnrollment", fields: [respondedById], references: [id])
+  rejectionReason String?
 }
 
 model Question {
