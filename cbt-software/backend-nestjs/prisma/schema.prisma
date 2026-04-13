@@ -90,8 +90,7 @@ model User {
   memberOfClasses       Classroom[]     @relation("ClassroomMembers")
   enrollmentRequests    EnrollmentRequest[] @relation("StudentEnrollment")
   handledEnrollments    EnrollmentRequest[] @relation("AdminEnrollment")
-  sentMessages          Message[]       @relation("SentMessages")
-  receivedMessages      Message[]       @relation("ReceivedMessages")
+  studyMaterials        StudyMaterial[] @relation("UploadedMaterials")
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
   @@index([schoolId, role])
@@ -141,7 +140,7 @@ model Classroom {
   attendance    Attendance[]
   leaderboards  Leaderboard[]
   enrollmentRequests EnrollmentRequest[]
-  messages      Message[]
+  studyMaterials StudyMaterial[]
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 }
@@ -160,6 +159,20 @@ model EnrollmentRequest {
   respondedById   String?
   respondedBy     User?            @relation("AdminEnrollment", fields: [respondedById], references: [id])
   rejectionReason String?
+}
+
+model StudyMaterial {
+  id          String    @id @default(uuid())
+  title       String
+  description String?
+  fileUrl     String
+  fileName    String
+  classId     String
+  classroom   Classroom @relation(fields: [classId], references: [id])
+  subject     String?
+  uploadedById String
+  uploadedBy  User      @relation("UploadedMaterials", fields: [uploadedById], references: [id])
+  createdAt   DateTime  @default(now())
 }
 
 model Question {
@@ -374,16 +387,4 @@ model Leaderboard {
   @@index([classId, averageScore(sort: Desc)])
   @@index([testId, totalScore(sort: Desc)])
   @@index([points(sort: Desc)])
-}
-
-model Message {
-  id          String   @id @default(uuid())
-  content     String
-  senderId    String
-  sender      User     @relation("SentMessages", fields: [senderId], references: [id])
-  receiverId  String?
-  receiver    User?    @relation("ReceivedMessages", fields: [receiverId], references: [id])
-  classId     String?
-  classroom   Classroom? @relation(fields: [classId], references: [id])
-  createdAt   DateTime @default(now())
 }

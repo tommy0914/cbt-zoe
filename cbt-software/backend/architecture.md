@@ -28,3 +28,5 @@ Client → API → Auth Middleware → Authorization → Service Layer → Datab
 - DB: PostgreSQL
 - ORM: Prisma
 - Auth: JWT + Refresh Tokens
+
+
