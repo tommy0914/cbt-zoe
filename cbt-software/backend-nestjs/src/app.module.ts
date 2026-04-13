@@ -11,6 +11,7 @@ import { AttemptsModule } from './modules/attempts/attempts.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { AnnouncementsModule } from './modules/announcements/announcements.module';
 import { AttendanceModule } from './modules/attendance/attendance.module';
+import { ClassroomsModule } from './modules/classrooms/classrooms.module';
 import { AuditInterceptor } from './common/interceptors/audit.interceptor';
 
 @Module({
@@ -26,6 +27,7 @@ import { AuditInterceptor } from './common/interceptors/audit.interceptor';
     AnalyticsModule,
     AnnouncementsModule,
     AttendanceModule,
+    ClassroomsModule,
   ],
   providers: [
     {
