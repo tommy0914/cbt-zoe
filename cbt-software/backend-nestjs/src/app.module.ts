@@ -14,6 +14,7 @@ import { AttendanceModule } from './modules/attendance/attendance.module';
 import { ClassroomsModule } from './modules/classrooms/classrooms.module';
 import { EnrollmentModule } from './modules/enrollment/enrollment.module';
 import { MaterialsModule } from './modules/materials/materials.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
 import { AuditInterceptor } from './common/interceptors/audit.interceptor';
 
 @Module({
@@ -32,6 +33,7 @@ import { AuditInterceptor } from './common/interceptors/audit.interceptor';
     ClassroomsModule,
     EnrollmentModule,
     MaterialsModule,
+    NotificationsModule,
   ],
   providers: [
     {
