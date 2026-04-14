@@ -65,4 +65,41 @@ export class EnrollmentService {
       include: { school: { select: { name: true } }, teacher: { select: { name: true } } },
     });
   }
-}
+
+  async bulkEnroll(classId: string, students: { name: string; email: string; matricNo?: string }[], schoolId: string) {
+    const classroom = await this.prisma.classroom.findUnique({ where: { id: classId } });
+    if (!classroom) throw new NotFoundException('Classroom not found');
+
+    const results = [];
+    for (const s of students) {
+      try {
+        // Find or create user
+        let user = await this.prisma.user.findUnique({ where: { email: s.email } });
+        if (!user) {
+          user = await this.prisma.user.create({
+            data: {
+              name: s.name,
+              email: s.email,
+              password: '$2b$10$UnPredictablePasswordHashForBulkStudentEnrollment12345', // Use a standard default hash or generate one
+              role: 'student',
+              schoolId: schoolId,
+              mustChangePassword: true,
+            },
+          });
+        }
+
+        // Connect to classroom
+        await this.prisma.classroom.update({
+          where: { id: classId },
+          data: {
+            members: { connect: { id: user.id } },
+          },
+        });
+        results.push({ email: s.email, status: 'enrolled' });
+      } catch (err: any) {
+        results.push({ email: s.email, status: 'error', message: err.message });
+      }
+    }
+    return results;
+  }
+  }

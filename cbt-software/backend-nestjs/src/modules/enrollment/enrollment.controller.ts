@@ -33,4 +33,15 @@ export class EnrollmentController {
   async getAvailableClasses() {
     return this.enrollmentService.getAvailableClasses();
   }
+
+  @Post('bulk/:classId')
+  async bulkEnroll(
+    @Param('classId') classId: string,
+    @Body('students') students: any[],
+    @Req() req: any,
+    @Query('schoolId') schoolId: string,
+  ) {
+    const sId = schoolId || req.user.schoolId;
+    return this.enrollmentService.bulkEnroll(classId, students, sId);
+  }
 }

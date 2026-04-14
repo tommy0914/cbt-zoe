@@ -4,7 +4,7 @@ import { MessagingService } from './messaging.service';
 
 @WebSocketGateway({ cors: { origin: '*' } })
 export class MessagingGateway {
-  @WebSocketServer() server: Server;
+  @WebSocketServer() server!: Server;
 
   constructor(private readonly messagingService: MessagingService) {}
 

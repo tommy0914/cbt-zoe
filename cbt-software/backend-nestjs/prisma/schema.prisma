@@ -91,6 +91,11 @@ model User {
   enrollmentRequests    EnrollmentRequest[] @relation("StudentEnrollment")
   handledEnrollments    EnrollmentRequest[] @relation("AdminEnrollment")
   studyMaterials        StudyMaterial[] @relation("UploadedMaterials")
+  sentMessages          Message[]       @relation("SentMessages")
+  receivedMessages      Message[]       @relation("ReceivedMessages")
+  reportCards           ReportCard[]    @relation("ReportCardStudent")
+  approvedReportCards   ReportCard[]    @relation("ReportCardApprover")
+  generatedReportCards  ReportCard[]    @relation("ReportCardGenerator")
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
   @@index([schoolId, role])
@@ -111,6 +116,7 @@ model School {
   announcements Announcement[]
   leaderboards  Leaderboard[]
   enrollmentRequests EnrollmentRequest[]
+  reportCards   ReportCard[]    @relation("ReportCardSchool")
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 }
@@ -141,6 +147,8 @@ model Classroom {
   leaderboards  Leaderboard[]
   enrollmentRequests EnrollmentRequest[]
   studyMaterials StudyMaterial[]
+  messages      Message[]
+  reportCards   ReportCard[]    @relation("ReportCardClassroom")
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 }
@@ -387,4 +395,54 @@ model Leaderboard {
   @@index([classId, averageScore(sort: Desc)])
   @@index([testId, totalScore(sort: Desc)])
   @@index([points(sort: Desc)])
+}
+
+model Message {
+  id          String    @id @default(uuid())
+  content     String
+  senderId    String
+  sender      User      @relation("SentMessages", fields: [senderId], references: [id])
+  receiverId  String?
+  receiver    User?     @relation("ReceivedMessages", fields: [receiverId], references: [id])
+  classId     String?
+  classroom   Classroom? @relation(fields: [classId], references: [id])
+  createdAt   DateTime  @default(now())
+}
+
+model ReportCard {
+  id                String    @id @default(uuid())
+  studentId         String
+  student           User      @relation("ReportCardStudent", fields: [studentId], references: [id])
+  studentName       String
+  studentEmail      String
+  studentRoll       String?
+  classId           String
+  classroom         Classroom @relation("ReportCardClassroom", fields: [classId], references: [id])
+  className         String
+  schoolId          String?
+  school            School?   @relation("ReportCardSchool", fields: [schoolId], references: [id])
+  academicTerm      String?
+  academicYear      String?
+  overallGPA        Float     @default(0)
+  overallGrade      String    @default("F")
+  overallRanking    Int?
+  totalTestsTaken   Int       @default(0)
+  averagePercentage Float     @default(0)
+  subjectGrades     Json      @default("[]")
+  testBreakdown     Json      @default("[]")
+  attendance        Json?
+  conduct           Json?
+  principalRemarks  String?
+  teacherRemarks    String?
+  parentalComment   String?
+  isApproved        Boolean   @default(false)
+  approvedById      String?
+  approvedBy        User?     @relation("ReportCardApprover", fields: [approvedById], references: [id])
+  approvedAt        DateTime?
+  generatedAt       DateTime  @default(now())
+  generatedById     String?
+  generatedBy       User?     @relation("ReportCardGenerator", fields: [generatedById], references: [id])
+  updatedAt         DateTime  @updatedAt
+  publishedAt       DateTime?
+  isPublished       Boolean   @default(false)
 }
