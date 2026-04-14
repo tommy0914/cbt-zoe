@@ -4,6 +4,7 @@ import { useAuth } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import YoungEmeritusLogo from './components/YoungEmeritusLogo';
 import ChangePassword from './components/ChangePassword';
+import AppShell from './components/AppShell';
 
 // Lazy load pages that don't need wrapping
 const SecureLogin = lazy(() => import('./pages/SecureLogin'));
@@ -17,6 +18,7 @@ import TeacherClasses from './pages/TeacherClasses';
 import JoinSchool from './pages/JoinSchool';
 import CreateSchool from './pages/CreateSchool';
 import SchoolDashboard from './components/SchoolDashboard';
+import UserManagement from './components/UserManagement';
 
 // Wrapper components for protected routes - these handle auth checks internally
 function ProtectedJoinSchool() {
@@ -39,11 +41,17 @@ function ProtectedSchoolDashboard() {
   return <ProtectedRoute allowedRoles={['superAdmin']}><SchoolDashboard /></ProtectedRoute>;
 }
 
+function ProtectedUserManagement() {
+  return <ProtectedRoute allowedRoles={['admin']}><UserManagement /></ProtectedRoute>;
+}
+
 function AppLayout() {
   const { isAuthenticated, user, logout, login, isLoading } = useAuth();
   const [showPasswordChange, setShowPasswordChange] = useState(false);
   const location = useLocation();
   const isLandingPage = location.pathname === '/' || location.pathname === '/landing';
+  const isAuthPage = location.pathname === '/login' || location.pathname === '/signup';
+  const useAppShell = isAuthenticated && !isLandingPage && !isAuthPage;
 
   // Check if user needs to change password on mount and when user changes
   useEffect(() => {
@@ -70,7 +78,7 @@ function AppLayout() {
 
   return (
     <div className="app-layout">
-      {!isLandingPage && (
+      {(!isAuthenticated && !isLandingPage) && (
         <header className="app-header">
           <div className="container">
             <div className="header-content">
@@ -82,33 +90,18 @@ function AppLayout() {
                 </div>
               </Link>
               <nav className="main-nav">
-                {isAuthenticated ? (
-                  <>
-                    <Link to="/join-school">Join School</Link>
-                    <Link to="/student">Student Test</Link>
-                    {(user?.role === 'admin' || user?.role === 'teacher') && <Link to="/teacher">My Classes</Link>}
-                    {(user?.role === 'admin' || user?.role === 'superAdmin') && <Link to="/admin">Admin Dashboard</Link>}
-                    {(user?.role === 'superAdmin') && <Link to="/schools">School Dashboard</Link>}
-                    <button onClick={logout} className="logout-btn">
-                      Logout
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <Link to="/login">
-                      <button>Login</button>
-                    </Link>
-                    <Link to="/signup">
-                      <button>Sign Up</button>
-                    </Link>
-                  </>
-                )}
+                <Link to="/login">
+                  <button>Login</button>
+                </Link>
+                <Link to="/signup">
+                  <button>Sign Up</button>
+                </Link>
               </nav>
             </div>
           </div>
         </header>
       )}
-      <main className={isLandingPage ? '' : 'container'}>
+      <main className={(isLandingPage || useAppShell) ? '' : 'container'}>
         {showPasswordChange && token && (
           <div style={{
             position: 'fixed',
@@ -143,12 +136,20 @@ const router = createBrowserRouter([
       { path: 'landing', element: <Landing /> },
       { path: 'login', element: <SecureLogin /> },
       { path: 'signup', element: <Signup /> },
-      { path: 'join-school', element: <ProtectedJoinSchool /> },
-      { path: 'create-school', element: <ProtectedRoute><CreateSchool /></ProtectedRoute> },
-      { path: 'student', element: <ProtectedStudentTest /> },
-      { path: 'admin', element: <AdminDashboard /> },
-      { path: 'teacher', element: <ProtectedTeacherClasses /> },
-      { path: 'schools', element: <ProtectedSchoolDashboard /> },
+      {
+        element: <AppShell />,
+        children: [
+          { path: 'dashboard', element: <ProtectedAdminDashboard /> },
+          { path: 'admin', element: <ProtectedAdminDashboard /> },
+          { path: 'classes', element: <ProtectedTeacherClasses /> },
+          { path: 'teacher', element: <ProtectedTeacherClasses /> },
+          { path: 'users', element: <ProtectedUserManagement /> },
+          { path: 'schools', element: <ProtectedSchoolDashboard /> },
+          { path: 'join-school', element: <ProtectedJoinSchool /> },
+          { path: 'student', element: <ProtectedStudentTest /> },
+          { path: 'create-school', element: <ProtectedRoute><CreateSchool /></ProtectedRoute> },
+        ],
+      },
     ],
   },
 ]);

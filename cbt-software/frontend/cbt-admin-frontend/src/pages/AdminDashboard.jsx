@@ -4,6 +4,15 @@ import api from '../services/api';
 import UserSearch from '../components/UserSearch';
 import ExportResults from '../components/ExportResults';
 import AuditLogs from '../components/AuditLogs';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+
+// Data from API (mock for now if needed)
+const trendData = [
+  { name: 'Week 1', avg: 65 },
+  { name: 'Week 2', avg: 72 },
+  { name: 'Week 3', avg: 68 },
+  { name: 'Week 4', avg: 85 },
+];
 
 // Lazy load heavy components
 const QuestionForm = lazy(() => import('../components/QuestionForm'));
@@ -275,9 +284,41 @@ function AdminDashboard() {
 
       <div className="card" style={{ marginBottom: '20px' }}>
         <h4>Analytics & Reports</h4>
-        <div style={{ display: 'flex', gap: '12px' }}>
+        <div style={{ display: 'flex', gap: '12px', marginBottom: '20px' }}>
           <button onClick={fetchOverall} style={{ flex: 1, background: 'var(--ye-success)' }}>Overall Performance</button>
           <button onClick={fetchDifficulty} style={{ flex: 1, background: 'var(--ye-accent)' }}>Question Difficulty</button>
+        </div>
+
+        <div className="chart-container" style={{ height: 300, marginTop: '20px' }}>
+          <h4 style={{ marginBottom: '16px' }}>📉 Student Progress Trend</h4>
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={trendData}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+              <XAxis 
+                dataKey="name" 
+                axisLine={false} 
+                tickLine={false} 
+                tick={{ fill: '#6b7280', fontSize: 12 }} 
+                dy={10}
+              />
+              <YAxis 
+                axisLine={false} 
+                tickLine={false} 
+                tick={{ fill: '#6b7280', fontSize: 12 }} 
+              />
+              <Tooltip 
+                contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+              />
+              <Line 
+                type="monotone" 
+                dataKey="avg" 
+                stroke="#4f46e5" 
+                strokeWidth={3} 
+                dot={{ r: 4, fill: '#4f46e5', strokeWidth: 2, stroke: '#fff' }}
+                activeDot={{ r: 6, strokeWidth: 0 }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
         </div>
       </div>
 
