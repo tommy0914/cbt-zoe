@@ -10,6 +10,12 @@ export class QuestionsService {
     return this.prisma.question.create({ data });
   }
 
+  async bulkCreate(questions: any[]) {
+    return this.prisma.question.createMany({
+      data: questions,
+    });
+  }
+
   async findAll() {
     return this.prisma.question.findMany({
       include: { createdBy: { select: { name: true, email: true } } }

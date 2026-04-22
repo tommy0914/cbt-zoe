@@ -96,6 +96,8 @@ model User {
   reportCards           ReportCard[]    @relation("ReportCardStudent")
   approvedReportCards   ReportCard[]    @relation("ReportCardApprover")
   generatedReportCards  ReportCard[]    @relation("ReportCardGenerator")
+  attempts              Attempt[]       @relation("UserAttempts")
+  certificates          Certificate[]   @relation("UserCertificates")
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
   @@index([schoolId, role])
@@ -219,6 +221,7 @@ model Test {
   attempts          Attempt[]
   leaderboards      Leaderboard[]
   testAttemptMetrics TestAttemptMetric[]
+  certificates      Certificate[]
   createdAt         DateTime    @default(now())
   updatedAt         DateTime    @updatedAt
 }
@@ -226,6 +229,7 @@ model Test {
 model Attempt {
   id          String        @id @default(uuid())
   studentId   String
+  student     User          @relation("UserAttempts", fields: [studentId], references: [id])
   testId      String
   test        Test          @relation(fields: [testId], references: [id])
   responses   Response[]
@@ -445,4 +449,25 @@ model ReportCard {
   updatedAt         DateTime  @updatedAt
   publishedAt       DateTime?
   isPublished       Boolean   @default(false)
+}
+
+model Certificate {
+  id                String    @id @default(uuid())
+  studentId         String
+  student           User      @relation("UserCertificates", fields: [studentId], references: [id])
+  testId            String
+  test              Test      @relation(fields: [testId], references: [id])
+  classId           String?
+  schoolId          String?
+  studentName       String
+  studentEmail      String
+  testTitle         String
+  score             Int
+  totalMarks        Int
+  percentage        Int
+  certificateNumber String    @unique @default(cuid())
+  template          String    @default("standard")
+  status            String    @default("issued")
+  issuedDate        DateTime  @default(now())
+  sentAt            DateTime?
 }

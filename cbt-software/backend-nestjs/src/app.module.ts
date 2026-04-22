@@ -16,6 +16,7 @@ import { EnrollmentModule } from './modules/enrollment/enrollment.module';
 import { MaterialsModule } from './modules/materials/materials.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { MessagingModule } from './modules/messaging/messaging.module';
+import { QuickWinsModule } from './modules/quickwins/quickwins.module';
 import { AuditInterceptor } from './common/interceptors/audit.interceptor';
 
 @Module({
@@ -36,6 +37,7 @@ import { AuditInterceptor } from './common/interceptors/audit.interceptor';
     MaterialsModule,
     NotificationsModule,
     MessagingModule,
+    QuickWinsModule,
   ],
   providers: [
     {

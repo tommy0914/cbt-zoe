@@ -92,7 +92,7 @@ export class TestEngineService {
 
     const percentage = Math.round((totalScore / attempt.test.totalMarks) * 100);
 
-    return this.prisma.attempt.update({
+    const updatedAttempt = await this.prisma.attempt.update({
       where: { id: attempt.id },
       data: {
         totalScore,
@@ -101,5 +101,70 @@ export class TestEngineService {
         submitTime: new Date(),
       },
     });
-  }
-}
+
+    // ============ UPDATE LEADERBOARD ============
+    try {
+      const student = await this.prisma.user.findUnique({ where: { id: studentId } });
+      const passed = totalScore >= attempt.test.passingMarks;
+
+      const leaderboardEntry = await this.prisma.leaderboard.findFirst({
+        where: { studentId, classId: attempt.test.classId },
+      });
+
+      if (leaderboardEntry) {
+        await this.prisma.leaderboard.update({
+          where: { id: leaderboardEntry.id },
+          data: {
+            testsAttempted: { increment: 1 },
+            totalScore: { increment: totalScore },
+            averageScore: (leaderboardEntry.totalScore + totalScore) / (leaderboardEntry.testsAttempted + 1),
+            points: { increment: Math.floor((totalScore / attempt.test.totalMarks) * 100) },
+            passCount: passed ? { increment: 1 } : undefined,
+            streak: passed ? { increment: 1 } : 0,
+            lastUpdated: new Date(),
+          },
+        });
+      } else {
+        await this.prisma.leaderboard.create({
+          data: {
+            studentId,
+            classId: attempt.test.classId,
+            schoolId: student?.schoolId,
+            studentName: student?.name,
+            studentEmail: student?.email,
+            testsAttempted: 1,
+            totalScore,
+            averageScore: percentage,
+            points: Math.floor((totalScore / attempt.test.totalMarks) * 100),
+            passCount: passed ? 1 : 0,
+            streak: passed ? 1 : 0,
+          },
+        });
+      }
+
+      // ============ GENERATE CERTIFICATE ============
+      if (passed) {
+        await this.prisma.certificate.create({
+          data: {
+            studentId,
+            testId,
+            classId: attempt.test.classId,
+            schoolId: student?.schoolId,
+            studentName: student?.name || 'Unknown',
+            studentEmail: student?.email || 'Unknown',
+            testTitle: attempt.test.title,
+            score: totalScore,
+            totalMarks: attempt.test.totalMarks,
+            percentage,
+            template: percentage >= 90 ? 'gold' : percentage >= 75 ? 'platinum' : 'standard',
+          },
+        });
+      }
+    } catch (error) {
+      console.error('Error updating leaderboard/certificates:', error);
+      // Don't fail the submission if leaderboard update fails
+    }
+
+    return updatedAttempt;
+    }
+    }
