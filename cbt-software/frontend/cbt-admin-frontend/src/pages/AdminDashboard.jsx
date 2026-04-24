@@ -145,23 +145,15 @@ function AdminDashboard() {
 
   async function removeSubjectFromClass(classId, subject) {
     const schoolParam = isSuperAdmin ? `?schoolId=${selectedSchoolId}` : '';
-    const del = await fetch(`/api/classes/${classId}/subjects/${encodeURIComponent(subject)}${schoolParam}`, {
-      method: 'DELETE',
-      headers: { Authorization: token ? `Bearer ${token}` : '' },
-    });
-    const body = await del.json();
-    if (del.ok) fetchClasses();
+    const body = await api.delete(`/api/classes/${classId}/subjects/${encodeURIComponent(subject)}${schoolParam}`);
+    if (!body.error) fetchClasses();
     else alert(body.message || 'Failed to remove subject');
   }
 
   async function deleteClass(classId) {
     const schoolParam = isSuperAdmin ? `?schoolId=${selectedSchoolId}` : '';
-    const del = await fetch(`/api/classes/${classId}${schoolParam}`, {
-      method: 'DELETE',
-      headers: { Authorization: token ? `Bearer ${token}` : '' },
-    });
-    const body = await del.json();
-    if (del.ok) fetchClasses();
+    const body = await api.delete(`/api/classes/${classId}${schoolParam}`);
+    if (!body.error) fetchClasses();
     else alert(body.message || 'Failed to delete class');
   }
 
@@ -203,12 +195,8 @@ function AdminDashboard() {
 
   async function removeMember(classId, memberId) {
     const schoolParam = isSuperAdmin ? `?schoolId=${selectedSchoolId}` : '';
-    const del = await fetch(`/api/classes/${classId}/members/${memberId}${schoolParam}`, {
-      method: 'DELETE',
-      headers: { Authorization: token ? `Bearer ${token}` : '' },
-    });
-    const body = await del.json();
-    if (del.ok) fetchClasses();
+    const body = await api.delete(`/api/classes/${classId}/members/${memberId}${schoolParam}`);
+    if (!body.error) fetchClasses();
     else alert(body.message || 'Failed to remove member');
   }
 

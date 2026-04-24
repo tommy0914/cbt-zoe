@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { EnrollmentStatus } from '@prisma/client';
+import { EnrollmentStatus, Role } from '@prisma/client';
 
 @Injectable()
 export class EnrollmentService {
@@ -81,7 +81,7 @@ export class EnrollmentService {
               name: s.name,
               email: s.email,
               password: '$2b$10$UnPredictablePasswordHashForBulkStudentEnrollment12345', // Use a standard default hash or generate one
-              role: 'student',
+              role: Role.student,
               schoolId: schoolId,
               mustChangePassword: true,
             },

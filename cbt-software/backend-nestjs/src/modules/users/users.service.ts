@@ -8,4 +8,58 @@ export class UsersService {
   async findByEmail(email: string) {
     return this.prisma.user.findUnique({ where: { email } });
   }
+
+  async searchByEmail(query: string) {
+    if (!query) return [];
+    return this.prisma.user.findMany({
+      where: {
+        email: { contains: query, mode: 'insensitive' },
+      },
+      take: 20,
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        username: true,
+        profilePicture: true,
+      },
+    });
+  }
+
+  async findById(id: string) {
+    return this.prisma.user.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        username: true,
+        profilePicture: true,
+        schoolId: true,
+      },
+    });
+  }
+
+  async updateProfile(id: string, updates: any) {
+    const data: any = {};
+    if (typeof updates.name === 'string') data.name = updates.name.trim();
+    if (typeof updates.email === 'string') data.email = updates.email.trim().toLowerCase();
+    if (typeof updates.profilePicture === 'string') data.profilePicture = updates.profilePicture;
+    if (typeof updates.matricNumber === 'string') data.username = updates.matricNumber.trim().toLowerCase();
+
+    return this.prisma.user.update({
+      where: { id },
+      data,
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        username: true,
+        profilePicture: true,
+      },
+    });
+  }
 }

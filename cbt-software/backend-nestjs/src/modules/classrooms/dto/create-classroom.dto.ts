@@ -5,6 +5,7 @@ export class CreateClassroomDto {
   name!: string;
 
   @IsUUID()
+  @IsOptional()
   schoolId!: string;
 
   @IsArray()

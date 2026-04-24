@@ -69,6 +69,15 @@ async function put(path, body) {
   return res.json();
 }
 
+async function patch(path, body) {
+  const res = await fetch(BASE + path, {
+    method: 'PATCH',
+    headers: getHeaders(),
+    body: JSON.stringify(body)
+  });
+  return res.json();
+}
+
 async function del(path) {
   const res = await fetch(BASE + path, {
     method: 'DELETE',
@@ -77,4 +86,4 @@ async function del(path) {
   return res.json();
 }
 
-export default { post, get, postForm, put, delete: del }
+export default { post, get, postForm, put, patch, delete: del }

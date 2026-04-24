@@ -9,12 +9,18 @@ export class TestEngineController {
 
   @Get('class/:classId')
   async getTestsByClass(@Param('classId') classId: string) {
-    return this.testEngineService.getTestsByClass(classId);
+    const tests = await this.testEngineService.getTestsByClass(classId);
+    return { tests: tests.map((t: any) => ({ ...t, _id: t.id })) };
   }
 
   @Get(':id')
   async getTest(@Param('id') id: string) {
-    return this.testEngineService.getTestWithQuestions(id);
+    const test = await this.testEngineService.getTestWithQuestions(id);
+    return {
+      ...test,
+      _id: test.id,
+      questions: (test.questions || []).map((q: any) => ({ ...q, _id: q.id })),
+    };
   }
 
   @Post(':id/start')

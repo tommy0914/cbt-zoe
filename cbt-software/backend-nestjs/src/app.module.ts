@@ -18,6 +18,8 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { MessagingModule } from './modules/messaging/messaging.module';
 import { QuickWinsModule } from './modules/quickwins/quickwins.module';
 import { AuditInterceptor } from './common/interceptors/audit.interceptor';
+import { AdminModule } from './modules/admin/admin.module';
+import { ReportsModule } from './modules/reports/reports.module';
 
 @Module({
   imports: [
@@ -38,6 +40,8 @@ import { AuditInterceptor } from './common/interceptors/audit.interceptor';
     NotificationsModule,
     MessagingModule,
     QuickWinsModule,
+    AdminModule,
+    ReportsModule,
   ],
   providers: [
     {

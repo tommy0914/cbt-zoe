@@ -277,7 +277,7 @@ class AuthService {
     try {
       const response = await apiClient.post('/api/auth/verify-token', { token });
       return response.data.valid;
-    } catch (error) {
+    } catch {
       return false;
     }
   }

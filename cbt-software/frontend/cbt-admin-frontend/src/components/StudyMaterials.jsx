@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import api from '../services/api';
 
 export default function StudyMaterials({ classId, isTeacher }) {
   const [materials, setMaterials] = useState([]);
@@ -12,8 +13,6 @@ export default function StudyMaterials({ classId, isTeacher }) {
   const [subject, setSubject] = useState('');
   const [file, setFile] = useState(null);
 
-  const token = localStorage.getItem('token') || JSON.parse(localStorage.getItem('auth'))?.token;
-
   useEffect(() => {
     if (classId) {
       fetchMaterials();
@@ -23,11 +22,8 @@ export default function StudyMaterials({ classId, isTeacher }) {
   const fetchMaterials = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/materials/class/${classId}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await res.json();
-      if (res.ok) {
+      const data = await api.get(`/api/materials/class/${classId}`);
+      if (data && !data.error) {
         setMaterials(data.materials || []);
       }
     } catch (err) {
@@ -55,17 +51,8 @@ export default function StudyMaterials({ classId, isTeacher }) {
     formData.append('classId', classId);
 
     try {
-      const res = await fetch('/api/materials/upload', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-          // Note: Do not set Content-Type for FormData, browser will set it with the boundary automatically
-        },
-        body: formData
-      });
-
-      const data = await res.json();
-      if (res.ok) {
+      const data = await api.postForm('/api/materials/upload', formData);
+      if (data && !data.error) {
         setMessage('Material uploaded successfully! ✓');
         setTitle('');
         setDescription('');
@@ -91,15 +78,11 @@ export default function StudyMaterials({ classId, isTeacher }) {
     if (!window.confirm('Are you sure you want to delete this material?')) return;
     
     try {
-      const res = await fetch(`/api/materials/${id}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (res.ok) {
+      const res = await api.delete(`/api/materials/${id}`);
+      if (!res.error) {
         setMaterials(materials.filter(m => m._id !== id));
       } else {
-        const data = await res.json();
-        alert(data.message || 'Failed to delete');
+        alert(res.message || 'Failed to delete');
       }
     } catch (err) {
       console.error(err);

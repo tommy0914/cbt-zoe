@@ -21,4 +21,9 @@ export class AttendanceController {
   async getAttendance(@Param('classId') classId: string, @Query('date') date: string) {
     return this.attendanceService.getAttendance(classId, date);
   }
+
+  @Get(':classId/:date')
+  async getAttendanceByPath(@Param('classId') classId: string, @Param('date') date: string) {
+    return this.attendanceService.getAttendance(classId, date);
+  }
 }

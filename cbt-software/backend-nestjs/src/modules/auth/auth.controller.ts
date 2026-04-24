@@ -8,7 +8,8 @@ export class AuthController {
 
   @Post('login')
   async login(@Body() body: any) {
-    return this.authService.login(body.email, body.password);
+    const loginIdentifier = body.loginIdentifier || body.email;
+    return this.authService.login(loginIdentifier, body.password);
   }
 
   @Post('register')
@@ -33,8 +34,7 @@ export class AuthController {
   }
 
   @Post('refresh')
-  async refresh() {
-    // Basic implementation for now, returning success
-    return { success: true };
+  async refresh(@Body() body: any) {
+    return this.authService.refreshToken(body?.refreshToken);
   }
 }

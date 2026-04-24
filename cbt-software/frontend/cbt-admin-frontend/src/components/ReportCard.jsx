@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import '../styles/ReportCard.css';
+import api from '../services/api';
 
 const ReportCard = ({ reportCardId, onClose }) => {
   const [reportCard, setReportCard] = useState(null);
@@ -16,16 +17,12 @@ const ReportCard = ({ reportCardId, onClose }) => {
   const fetchReportCard = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/reports/report-card/${reportCardId}`, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setReportCard(data);
-        setRemarks(data.teacherRemarks || '');
-        setIsApproved(data.isApproved || false);
-        setIsPublished(data.isPublished || false);
+      const data = await api.get(`/api/reports/report-card/${reportCardId}`);
+      if (data?.reportCard) {
+        setReportCard(data.reportCard);
+        setRemarks(data.reportCard.teacherRemarks || '');
+        setIsApproved(data.reportCard.isApproved || false);
+        setIsPublished(data.reportCard.isPublished || false);
       } else {
         setMessage('Failed to load report card');
       }
@@ -39,21 +36,12 @@ const ReportCard = ({ reportCardId, onClose }) => {
 
   const handleUpdateRemarks = async () => {
     try {
-      const response = await fetch(`/api/reports/report-card/${reportCardId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({
-          teacherRemarks: remarks,
-          isApproved,
-          isPublished
-        })
+      const data = await api.put(`/api/reports/report-card/${reportCardId}`, {
+        teacherRemarks: remarks,
+        isApproved,
+        isPublished
       });
-
-      if (response.ok) {
-        const data = await response.json();
+      if (data?.reportCard) {
         setReportCard(data.reportCard);
         setMessage('Report card updated successfully! ✓');
         setTimeout(() => setMessage(''), 2000);

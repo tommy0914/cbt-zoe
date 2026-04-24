@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import '../styles/StudentResults.css';
 import ReportCard from './ReportCard';
+import api from '../services/api';
 
 const StudentResults = ({ classId, className, onClose }) => {
   const [students, setStudents] = useState([]);
@@ -28,13 +29,8 @@ const StudentResults = ({ classId, className, onClose }) => {
   useEffect(() => {
     const fetchTests = async () => {
       try {
-        const response = await fetch(`/api/tests?pageSize=100`, {
-          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setTests(data.tests || []);
-        }
+        const data = await api.get('/api/tests?pageSize=100');
+        setTests(data.tests || []);
       } catch (error) {}
     };
     if (classId) {
@@ -49,19 +45,12 @@ const StudentResults = ({ classId, className, onClose }) => {
     }
     try {
       setRescheduleMessage('Saving exception...');
-      const response = await fetch(`/api/tests/${rescheduleTestId}/exceptions`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({
-          userId: rescheduleStudentId,
-          availableUntil: new Date(rescheduleDate).toISOString()
-        })
+      const response = await api.post(`/api/tests/${rescheduleTestId}/exceptions`, {
+        userId: rescheduleStudentId,
+        availableUntil: new Date(rescheduleDate).toISOString()
       });
 
-      if (response.ok) {
+      if (!response.error) {
         setRescheduleMessage('Exam successfully rescheduled! ✓');
         setTimeout(() => {
           setRescheduleMessage('');
@@ -71,8 +60,7 @@ const StudentResults = ({ classId, className, onClose }) => {
           setRescheduleDate('');
         }, 3000);
       } else {
-        const err = await response.json();
-        setRescheduleMessage(`Error: ${err.message}`);
+        setRescheduleMessage(`Error: ${response.message}`);
       }
     } catch (error) {
        setRescheduleMessage('Error: Failed to reschedule exam.');
@@ -89,13 +77,8 @@ const StudentResults = ({ classId, className, onClose }) => {
   useEffect(() => {
     const fetchStudents = async () => {
       try {
-        const response = await fetch(`/api/classes/${classId}/students`, {
-          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setStudents(data.students || []);
-        }
+        const data = await api.get(`/api/classes/${classId}/students`);
+        setStudents(data.students || []);
       } catch (error) {
         console.error('Error fetching students:', error);
       }
@@ -111,13 +94,8 @@ const StudentResults = ({ classId, className, onClose }) => {
     const fetchResults = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`/api/reports/student-results/${classId}`, {
-          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setResults(data.results || []);
-        }
+        const data = await api.get(`/api/reports/student-results/${classId}`);
+        setResults(data.results || []);
       } catch (error) {
         console.error('Error fetching results:', error);
       } finally {
@@ -141,34 +119,21 @@ const StudentResults = ({ classId, className, onClose }) => {
       setGenerating(true);
       setMessage('Generating result...');
 
-      const response = await fetch(`/api/reports/generate-student-result/${selectedStudent}/${classId}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({ notes })
-      });
+      const response = await api.post(`/api/reports/generate-student-result/${selectedStudent}/${classId}`, { notes });
 
-      if (response.ok) {
-        const data = await response.json();
+      if (!response.error) {
+        const data = response;
         setMessage('Result generated successfully! ✓');
         setDetailedResult(data.result);
         setActiveTab('detail');
 
         // Refresh results list
-        const refreshResponse = await fetch(`/api/reports/student-results/${classId}`, {
-          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-        });
-        if (refreshResponse.ok) {
-          const refreshData = await refreshResponse.json();
-          setResults(refreshData.results || []);
-        }
+        const refreshData = await api.get(`/api/reports/student-results/${classId}`);
+        setResults(refreshData.results || []);
 
         setTimeout(() => setMessage(''), 3000);
       } else {
-        const error = await response.json();
-        setMessage(`Error: ${error.error}`);
+        setMessage(`Error: ${response.error}`);
       }
     } catch (error) {
       console.error('Error generating result:', error);
@@ -182,12 +147,8 @@ const StudentResults = ({ classId, className, onClose }) => {
   const handleViewResult = async (resultId) => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/reports/student-result/${resultId}`, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-      });
-
-      if (response.ok) {
-        const data = await response.json();
+      const data = await api.get(`/api/reports/student-result/${resultId}`);
+      if (!data.error) {
         setDetailedResult(data);
         setNotes(data.notes || '');
         setActiveTab('detail');
@@ -207,17 +168,8 @@ const StudentResults = ({ classId, className, onClose }) => {
     if (!detailedResult) return;
 
     try {
-      const response = await fetch(`/api/reports/student-result/${detailedResult._id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({ notes })
-      });
-
-      if (response.ok) {
-        const data = await response.json();
+      const data = await api.put(`/api/reports/student-result/${detailedResult._id}`, { notes });
+      if (!data.error) {
         setDetailedResult(data.result);
         setMessage('Notes updated successfully! ✓');
         setTimeout(() => setMessage(''), 2000);
@@ -280,12 +232,8 @@ const StudentResults = ({ classId, className, onClose }) => {
     if (!window.confirm('Are you sure you want to delete this result?')) return;
 
     try {
-      const response = await fetch(`/api/reports/student-result/${resultId}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-      });
-
-      if (response.ok) {
+      const response = await api.delete(`/api/reports/student-result/${resultId}`);
+      if (!response.error) {
         setMessage('Result deleted successfully ✓');
         setResults(results.filter(r => r._id !== resultId));
         setActiveTab('list');
@@ -303,27 +251,19 @@ const StudentResults = ({ classId, className, onClose }) => {
       setGenerating(true);
       setMessage('Generating report card...');
 
-      const response = await fetch(`/api/reports/generate-report-card/${detailedResult.studentId._id}/${classId}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({
-          academicTerm: 'Term 1',
-          academicYear: new Date().getFullYear() + '-' + (new Date().getFullYear() + 1)
-        })
+      const response = await api.post(`/api/reports/generate-report-card/${detailedResult.studentId._id}/${classId}`, {
+        academicTerm: 'Term 1',
+        academicYear: new Date().getFullYear() + '-' + (new Date().getFullYear() + 1)
       });
 
-      if (response.ok) {
-        const data = await response.json();
+      if (!response.error) {
+        const data = response;
         setReportCardData(data.reportCard);
         setShowReportCard(data.reportCard._id);
         setMessage('Report card generated successfully! ✓');
         setTimeout(() => setMessage(''), 2000);
       } else {
-        const error = await response.json();
-        setMessage(`Error: ${error.error}`);
+        setMessage(`Error: ${response.error}`);
       }
     } catch (error) {
       console.error('Error generating report card:', error);

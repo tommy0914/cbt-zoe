@@ -13,20 +13,94 @@ export class AuthService {
     private prisma: PrismaService,
   ) {}
 
-  async login(email: string, pass: string) {
-    const user = await this.prisma.user.findUnique({ where: { email } });
-    if (user && await bcrypt.compare(pass, user.password)) {
-      const payload = { sub: user.id, email: user.email, role: user.role };
-      const accessToken = await this.jwtService.signAsync(payload);
-      
-      // Remove password from user object
-      const { password, ...userWithoutPassword } = user;
+  private async buildTokenPair(user: any) {
+    const accessPayload = {
+      sub: user.id,
+      email: user.email,
+      role: user.role,
+      schoolId: user.schoolId || null,
+      type: 'access',
+    };
+    const refreshPayload = {
+      sub: user.id,
+      email: user.email,
+      type: 'refresh',
+    };
 
+    const accessToken = await this.jwtService.signAsync(accessPayload, {
+      secret: process.env.JWT_SECRET || 'fallback_secret',
+      expiresIn: '15m',
+    });
+    const refreshToken = await this.jwtService.signAsync(refreshPayload, {
+      secret: process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET || 'fallback_secret',
+      expiresIn: '7d',
+    });
+
+    return { accessToken, refreshToken };
+  }
+
+  private normalizeAuthUser(user: any) {
+    const { password, ...safe } = user;
+    const schools = (safe.schoolRoles || []).map((r: any) => ({
+      schoolId: r.schoolId,
+      role: r.role,
+    }));
+    return { ...safe, _id: safe.id, schools };
+  }
+
+  async login(email: string, pass: string) {
+    const loginIdentifier = email?.toLowerCase().trim();
+    const user = await this.prisma.user.findFirst({
+      where: {
+        OR: [{ email: loginIdentifier }, { username: loginIdentifier }],
+      },
+      include: { schoolRoles: true },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    if (user.lockUntil && new Date(user.lockUntil) > new Date()) {
+      const minutesRemaining = Math.ceil((new Date(user.lockUntil).getTime() - Date.now()) / 60000);
+      throw new UnauthorizedException(`Account is temporarily locked. Try again in ${minutesRemaining} minutes.`);
+    }
+
+    const validPassword = await bcrypt.compare(pass, user.password);
+    if (!validPassword) {
+      const nextAttempts = (user.loginAttempts || 0) + 1;
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: {
+          loginAttempts: nextAttempts,
+          lockUntil: nextAttempts >= 5 ? new Date(Date.now() + 30 * 60 * 1000) : null,
+        },
+      });
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        loginAttempts: 0,
+        lockUntil: null,
+        lastLogin: new Date(),
+      },
+    });
+    const freshUser = await this.prisma.user.findUnique({
+      where: { id: user.id },
+      include: { schoolRoles: true },
+    });
+    if (freshUser) {
+      const { accessToken, refreshToken } = await this.buildTokenPair(freshUser);
       return {
         success: true,
+        token: accessToken,
         accessToken,
-        user: userWithoutPassword,
-        expiresIn: 3600 // 1 hour
+        refreshToken,
+        userId: freshUser.id,
+        user: this.normalizeAuthUser(freshUser),
+        expiresIn: 900,
       };
     }
     throw new UnauthorizedException('Invalid credentials');
@@ -46,18 +120,19 @@ export class AuthService {
         password: hashedPassword,
         role: Role.student, // Default role
       },
+      include: { schoolRoles: true },
     });
 
-    const payload = { sub: user.id, email: user.email, role: user.role };
-    const accessToken = await this.jwtService.signAsync(payload);
-    
-    const { password, ...userWithoutPassword } = user;
+    const { accessToken, refreshToken } = await this.buildTokenPair(user);
 
     return {
       success: true,
+      token: accessToken,
       accessToken,
-      user: userWithoutPassword,
-      expiresIn: 3600
+      refreshToken,
+      userId: user.id,
+      user: this.normalizeAuthUser(user),
+      expiresIn: 900,
     };
   }
 
@@ -83,5 +158,38 @@ export class AuthService {
     } catch {
       return { valid: false };
     }
+  }
+
+  async refreshToken(refreshToken?: string) {
+    if (!refreshToken) {
+      throw new UnauthorizedException('Refresh token is required');
+    }
+
+    let decoded: any;
+    try {
+      decoded = await this.jwtService.verifyAsync(refreshToken, {
+        secret: process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET || 'fallback_secret',
+      });
+    } catch {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+
+    if (decoded?.type !== 'refresh') {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+
+    const user = await this.prisma.user.findUnique({ where: { id: decoded.sub } });
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    const pair = await this.buildTokenPair(user);
+    return {
+      success: true,
+      token: pair.accessToken,
+      accessToken: pair.accessToken,
+      refreshToken: pair.refreshToken,
+      expiresIn: 900,
+    };
   }
 }

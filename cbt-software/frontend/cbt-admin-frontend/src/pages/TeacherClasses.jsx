@@ -107,9 +107,8 @@ export default function TeacherClasses() {
   }
 
   async function removeMember(classId, memberId) {
-    const del = await fetch('/api/classes/' + classId + '/members/' + memberId, { method: 'DELETE', headers: { Authorization: token ? `Bearer ${token}` : '' } })
-    const body = await del.json()
-    if (del.ok) fetchClasses()
+    const body = await api.delete('/api/classes/' + classId + '/members/' + memberId)
+    if (!body.error) fetchClasses()
     else alert(body.message || 'Failed to remove member')
   }
 

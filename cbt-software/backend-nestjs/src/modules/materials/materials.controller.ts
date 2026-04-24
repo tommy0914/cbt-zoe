@@ -34,16 +34,19 @@ export class MaterialsController {
 
   @Get('class/:classId')
   async findByClass(@Param('classId') classId: string) {
-    return this.materialsService.findByClass(classId);
+    const materials = await this.materialsService.findByClass(classId);
+    return { materials: materials.map((m: any) => ({ ...m, _id: m.id })) };
   }
 
   @Get(':id')
   async findOne(@Param('id') id: string) {
-    return this.materialsService.findOne(id);
+    const material = await this.materialsService.findOne(id);
+    return { material: { ...material, _id: material.id } };
   }
 
   @Delete(':id')
   async remove(@Param('id') id: string) {
-    return this.materialsService.remove(id);
+    await this.materialsService.remove(id);
+    return { message: 'Material deleted' };
   }
 }
