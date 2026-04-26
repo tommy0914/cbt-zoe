@@ -22,6 +22,11 @@ export class AnalyticsController {
     return this.analyticsService.getClassPerformance(classId);
   }
 
+  @Get('class-insights/:classId')
+  async getClassInsights(@Param('classId') classId: string) {
+    return this.analyticsService.getClassInsights(classId);
+  }
+
   @Get('question-difficulty')
   async getQuestionDifficulty(@Request() req: any, @Query('schoolId') schoolId: string) {
     const sId = schoolId || req.user.schoolId;

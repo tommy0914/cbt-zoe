@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Param, Get, UseGuards, Request } from '@nestjs/common';
+import { Controller, Post, Body, Param, Get, UseGuards, Request, Delete } from '@nestjs/common';
 import { AttemptsService } from './attempts.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
@@ -28,5 +28,11 @@ export class AttemptsController {
   @Get(':id')
   async findOne(@Param('id') id: string) {
     return this.attemptsService.findOne(id);
+  }
+
+  @Delete(':id')
+  async remove(@Param('id') id: string) {
+    await this.attemptsService.deleteAttempt(id);
+    return { success: true, message: 'Attempt reset successfully' };
   }
 }

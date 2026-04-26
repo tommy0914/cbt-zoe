@@ -51,6 +51,38 @@ enum EnrollmentStatus {
   rejected
 }
 
+enum TermName {
+  FIRST
+  SECOND
+  THIRD
+}
+
+model AcademicSession {
+  id        String   @id @default(uuid())
+  name      String   // e.g. "2025/2026"
+  schoolId  String
+  school    School   @relation(fields: [schoolId], references: [id])
+  terms     AcademicTerm[]
+  isActive  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@unique([name, schoolId])
+}
+
+model AcademicTerm {
+  id        String   @id @default(uuid())
+  name      TermName
+  sessionId String
+  session   AcademicSession @relation(fields: [sessionId], references: [id])
+  isCurrent Boolean  @default(false)
+  isOpen    Boolean  @default(false)
+  startDate DateTime?
+  endDate   DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@unique([name, sessionId])
+}
+
 model User {
   id                    String    @id @default(uuid())
   name                  String
@@ -119,6 +151,8 @@ model School {
   leaderboards  Leaderboard[]
   enrollmentRequests EnrollmentRequest[]
   reportCards   ReportCard[]    @relation("ReportCardSchool")
+  questions     Question[]
+  academicSessions AcademicSession[]
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 }
@@ -193,13 +227,18 @@ model Question {
   correctAnswer String
   points        Int          @default(1)
   explanation   String?
+  imageUrl      String?
+  formula       String?
   difficulty    Difficulty   @default(medium)
   tags          String[]
+  schoolId      String?
+  school        School?      @relation(fields: [schoolId], references: [id])
   createdById   String
   createdBy     User         @relation(fields: [createdById], references: [id])
   tests         Test[]       @relation("TestQuestions")
   responses     Response[]
   createdAt     DateTime     @default(now())
+  @@index([schoolId])
 }
 
 model Test {
@@ -273,12 +312,12 @@ model StudentResult {
   totalQuestionsAttempted Int     @default(0)
   totalQuestionsCorrect Int       @default(0)
   correctPercentage     Float     @default(0)
+  overallGPA            Float     @default(0)
   subjectPerformance    SubjectPerformance[]
   testAttemptMetrics    TestAttemptMetric[]
   strengthAreas         String[]
   weakAreas             String[]
   passingRate           Float     @default(0)
-  overallGPA            Float     @default(0)
   ranking               Int?
   performanceGrade      String    @default("F")
   generatedAt           DateTime  @default(now())
@@ -325,6 +364,7 @@ model TestAttemptMetric {
 model Audit {
   id            String    @id @default(uuid())
   action        String
+  description   String?
   resourceType  String?
   resourceId    String?
   userId        String?

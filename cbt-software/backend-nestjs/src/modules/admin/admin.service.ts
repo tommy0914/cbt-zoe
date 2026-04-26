@@ -34,7 +34,10 @@ export class AdminService {
     const email = body.email ? String(body.email).toLowerCase().trim() : `${matric || Date.now()}@student.local`;
     const name = String(body.name || '').trim();
     const schoolId = body.schoolId || null;
-    const hashed = await bcrypt.hash('ChangeMe123!', 10);
+    const password = body.password || 'ChangeMe123!';
+    const mustChange = body.mustChangePassword !== undefined ? body.mustChangePassword : true;
+    
+    const hashed = await bcrypt.hash(password, 10);
 
     const student = await this.prisma.user.create({
       data: {
@@ -44,11 +47,52 @@ export class AdminService {
         role: Role.student,
         schoolId,
         username: matric || email.split('@')[0],
-        mustChangePassword: true,
+        mustChangePassword: mustChange,
       },
     });
 
     return { message: 'Student created successfully', student: { ...student, _id: student.id } };
+  }
+
+  async resetPassword(userId: string, newPassword?: string) {
+    const password = newPassword || 'ChangeMe123!';
+    const hashed = await bcrypt.hash(password, 10);
+    
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { 
+        password: hashed,
+        mustChangePassword: true
+      }
+    });
+    
+    return { success: true, message: 'Password has been reset successfully' };
+  }
+
+  async promoteStudent(studentId: string, fromClassId: string, toClassId: string) {
+    // 1. Remove from old class
+    if (fromClassId) {
+      await this.prisma.classroom.update({
+        where: { id: fromClassId },
+        data: {
+          members: {
+            disconnect: { id: studentId }
+          }
+        }
+      });
+    }
+
+    // 2. Add to new class
+    await this.prisma.classroom.update({
+      where: { id: toClassId },
+      data: {
+        members: {
+          connect: { id: studentId }
+        }
+      }
+    });
+
+    return { success: true, message: 'Student promoted successfully' };
   }
 
   async assignTeacher(email: string, schoolId?: string) {

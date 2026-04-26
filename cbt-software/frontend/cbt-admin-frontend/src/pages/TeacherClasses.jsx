@@ -10,6 +10,7 @@ import StudentResults from '../components/StudentResults'
 import TestBuilder from '../components/TestBuilder'
 import AttendanceTracker from '../components/AttendanceTracker'
 import StudyMaterials from '../components/StudyMaterials'
+import EnrollmentManagement from '../components/EnrollmentManagement'
 
 // Lazy load
 const QuestionForm = lazy(() => import('../components/QuestionForm'));
@@ -23,10 +24,13 @@ export default function TeacherClasses() {
   const [enrollmentRequests, setEnrollmentRequests] = useState([])
   const [showRequests, setShowRequests] = useState(false)
   const [showAnalytics, setShowAnalytics] = useState(false)
+  const [showBulkUpload, setShowBulkUpload] = useState(false)
   const [requestsLoading, setRequestsLoading] = useState(false)
   const [selectedClass, setSelectedClass] = useState(null)
   const [showStudentResults, setShowStudentResults] = useState(null)
   const [editingStudent, setEditingStudent] = useState(null)
+  const [promotingStudent, setPromotingStudent] = useState(null)
+  const [promoteToClassId, setPromoteToClassId] = useState('')
   const [editForm, setEditForm] = useState({ name: '', matricNumber: '', level: '' })
   const [newClassName, setNewClassName] = useState('')
   const [newClassSubjects, setNewClassSubjects] = useState('')
@@ -37,6 +41,7 @@ export default function TeacherClasses() {
   const [studentEmail, setStudentEmail] = useState('');
   const [studentMatricNumber, setStudentMatricNumber] = useState('');
   const [studentLevel, setStudentLevel] = useState('');
+  const [studentPassword, setStudentPassword] = useState('ChangeMe123!');
   const [studentMsg, setStudentMsg] = useState('');
 
   // Question Bank
@@ -84,15 +89,51 @@ export default function TeacherClasses() {
         email: studentEmail,
         matricNumber: studentMatricNumber,
         level: studentLevel,
-        schoolId: user?.schoolId, // Auto-associate to teacher's school if applicable
+        password: studentPassword,
+        mustChangePassword: true,
+        schoolId: user?.schoolId, 
       }, token);
       setStudentMsg(res.message || 'Student created successfully!');
       setStudentName('');
       setStudentEmail('');
       setStudentMatricNumber('');
       setStudentLevel('');
+      setStudentPassword('ChangeMe123!');
+      fetchClasses();
     } catch (err) {
       setStudentMsg(err.message || 'Failed to create student');
+    }
+  }
+
+  async function resetStudentPassword(studentId) {
+    const newPass = window.prompt('Enter new password for student (leave empty for default):', 'ChangeMe123!');
+    if (newPass === null) return; // cancelled
+
+    try {
+      const res = await api.post('/api/admin/reset-password', {
+        userId: studentId,
+        password: newPass || undefined
+      }, token);
+      alert(res.message || 'Password reset successfully!');
+    } catch (err) {
+      alert('Failed to reset password: ' + err.message);
+    }
+  }
+
+  async function promoteStudent(studentId, fromClassId) {
+    if (!promoteToClassId) return alert('Please select a class to promote to');
+    try {
+      const res = await api.post('/api/admin/promote-student', {
+        studentId,
+        fromClassId,
+        toClassId: promoteToClassId
+      }, token);
+      alert(res.message || 'Student promoted successfully!');
+      setPromotingStudent(null);
+      setPromoteToClassId('');
+      fetchClasses();
+    } catch (err) {
+      alert('Failed to promote: ' + err.message);
     }
   }
 
@@ -100,7 +141,7 @@ export default function TeacherClasses() {
     setRequestsLoading(true)
     try {
       const data = await api.get('/api/enrollment/requests?status=pending', token)
-      setEnrollmentRequests(data || [])
+      setEnrollmentRequests(data.requests || [])
     } catch (err) {
       console.error('Failed to fetch enrollment requests:', err)
     } finally { setRequestsLoading(false) }
@@ -144,7 +185,6 @@ export default function TeacherClasses() {
   }
 
   const openEditModal = (member) => {
-    // member could be an object or a string ID
     const memberObj = typeof member === 'object' ? member : { _id: member, name: member, matricNumber: '', level: '' };
     setEditingStudent(memberObj);
     setEditForm({ 
@@ -154,23 +194,42 @@ export default function TeacherClasses() {
     });
   };
 
-  if (loading) return <div className="card">Loading your classes...</div>
+  const openPromotionModal = (member, fromClassId) => {
+    setPromotingStudent({ ...member, fromClassId });
+    setPromoteToClassId('');
+  };
+
+  if (loading && classes.length === 0) return <div className="card">Loading your classes...</div>
 
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
         <h3 style={{ margin: 0 }}>👨‍🏫 My Classes</h3>
-        <button 
-          onClick={() => setShowAnalytics(!showAnalytics)} 
-          style={{ background: '#4f46e5', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: '500' }}
-        >
-          {showAnalytics ? 'Hide Analytics' : '📊 View Analytics Dashboard'}
-        </button>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <button 
+            onClick={() => setShowBulkUpload(!showBulkUpload)} 
+            style={{ background: '#0f766e', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: '500' }}
+          >
+            {showBulkUpload ? 'Hide Upload' : '📤 Bulk Upload Students'}
+          </button>
+          <button 
+            onClick={() => setShowAnalytics(!showAnalytics)} 
+            style={{ background: '#4f46e5', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: '500' }}
+          >
+            {showAnalytics ? 'Hide Analytics' : '📊 View Analytics Dashboard'}
+          </button>
+        </div>
       </div>
 
       {showAnalytics && (
         <div style={{ marginBottom: '24px' }}>
           <AnalyticsDashboard token={token} />
+        </div>
+      )}
+
+      {showBulkUpload && (
+        <div style={{ marginBottom: '24px' }}>
+          <EnrollmentManagement schoolId={user?.schoolId} />
         </div>
       )}
 
@@ -234,6 +293,10 @@ export default function TeacherClasses() {
             <div style={{ flex: 1, minWidth: '150px' }}>
               <label>Level</label>
               <input type="text" value={studentLevel} onChange={(e) => setStudentLevel(e.target.value)} required style={{ width: '100%', padding: '6px' }} />
+            </div>
+            <div style={{ flex: 1, minWidth: '150px' }}>
+              <label>Password</label>
+              <input type="text" value={studentPassword} onChange={(e) => setStudentPassword(e.target.value)} required style={{ width: '100%', padding: '6px' }} />
             </div>
             <div style={{ width: '100%' }}>
               <button type="submit" style={{ padding: '8px 16px', background: '#10b981', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Save Student</button>
@@ -363,7 +426,9 @@ export default function TeacherClasses() {
                           </div>
                           <span style={{ minWidth: '160px', fontWeight: '500' }}>{mObj.name || mObj.username || mObj._id}</span>
                           <button onClick={() => openEditModal(mObj)} style={{ padding: '4px 8px', fontSize: '12px', background: '#f3f4f6', border: '1px solid #d1d5db', borderRadius: '4px', cursor: 'pointer' }}>✏️ Edit</button>
-                          <button onClick={() => removeMember(c._id, mObj._id)} style={{ padding: '4px 8px', fontSize: '12px', background: '#fee2e2', color: '#dc2626', border: '1px solid #fca5a5', borderRadius: '4px', cursor: 'pointer' }}>Remove</button>
+                          <button onClick={() => openPromotionModal(mObj, c._id)} style={{ padding: '4px 8px', fontSize: '12px', background: '#e0f2fe', color: '#0369a1', border: '1px solid #bae6fd', borderRadius: '4px', cursor: 'pointer', marginLeft: '5px' }}>🎓 Promote</button>
+                          <button onClick={() => resetStudentPassword(mObj._id)} style={{ padding: '4px 8px', fontSize: '12px', background: '#fff7ed', color: '#c2410c', border: '1px solid #fdba74', borderRadius: '4px', cursor: 'pointer', marginLeft: '5px' }}>🔑 Reset PWD</button>
+                          <button onClick={() => removeMember(c._id, mObj._id)} style={{ padding: '4px 8px', fontSize: '12px', background: '#fee2e2', color: '#dc2626', border: '1px solid #fca5a5', borderRadius: '4px', cursor: 'pointer', marginLeft: '5px' }}>Remove</button>
                         </li>
                       );
                     })}
@@ -462,6 +527,48 @@ export default function TeacherClasses() {
                 <button type="submit" style={{ background: '#3b82f6', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '4px', cursor: 'pointer' }}>Save Changes</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Promotion Modal */}
+      {promotingStudent && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+          <div className="card" style={{ width: '450px', background: 'white', padding: '24px' }}>
+            <h3 style={{ marginTop: 0 }}>🎓 Promote Student</h3>
+            <p>Promote <strong>{promotingStudent.name || promotingStudent.username}</strong> to a new class.</p>
+            
+            <div style={{ marginBottom: '20px', marginTop: '20px' }}>
+              <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>Target Class</label>
+              <select 
+                value={promoteToClassId} 
+                onChange={e => setPromoteToClassId(e.target.value)}
+                style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }}
+              >
+                <option value="">-- Select New Class --</option>
+                {classes.filter(c => c._id !== promotingStudent.fromClassId).map(c => (
+                  <option key={c._id} value={c._id}>{c.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <button type="button" onClick={() => setPromotingStudent(null)} style={{ background: '#f3f4f6', color: '#374151', border: 'none', padding: '8px 16px', borderRadius: '4px', cursor: 'pointer' }}>Cancel</button>
+              <button 
+                onClick={() => promoteStudent(promotingStudent._id, promotingStudent.fromClassId)} 
+                disabled={!promoteToClassId}
+                style={{ 
+                  background: promoteToClassId ? '#0369a1' : '#ccc', 
+                  color: 'white', 
+                  border: 'none', 
+                  padding: '8px 16px', 
+                  borderRadius: '4px', 
+                  cursor: promoteToClassId ? 'pointer' : 'not-allowed' 
+                }}
+              >
+                Confirm Promotion
+              </button>
+            </div>
           </div>
         </div>
       )}

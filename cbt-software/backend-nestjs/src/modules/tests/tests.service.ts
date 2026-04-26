@@ -165,4 +165,18 @@ export class TestsService {
       },
     });
   }
+
+  async pickRandomQuestions(subject: string, count: number, schoolId?: string) {
+    const questions = await this.prisma.question.findMany({
+      where: {
+        tags: { has: subject },
+        ...(schoolId ? { schoolId } : {})
+      },
+      select: { id: true }
+    });
+
+    // Shuffle and pick
+    const shuffled = questions.sort(() => 0.5 - Math.random());
+    return shuffled.slice(0, count);
+  }
 }

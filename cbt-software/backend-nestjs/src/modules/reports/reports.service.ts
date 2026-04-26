@@ -51,6 +51,7 @@ export class ReportsService {
         status: m.status,
         isPassed: m.isPassed,
         completedAt: m.completedAt || r.generatedAt,
+        attemptId: m.attemptId,
       })),
     }));
   }

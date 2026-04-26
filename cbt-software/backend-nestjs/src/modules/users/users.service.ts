@@ -27,6 +27,34 @@ export class UsersService {
     });
   }
 
+  async searchUsers(query: string, schoolId?: string) {
+    if (!query) return [];
+    return this.prisma.user.findMany({
+      where: {
+        AND: [
+          {
+            OR: [
+              { name: { contains: query, mode: 'insensitive' } },
+              { email: { contains: query, mode: 'insensitive' } },
+              { username: { contains: query, mode: 'insensitive' } },
+            ],
+          },
+          schoolId ? { schoolId } : {},
+          { role: 'student' } // Typically teachers search for students
+        ]
+      },
+      take: 20,
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        username: true,
+        profilePicture: true,
+      },
+    });
+  }
+
   async findById(id: string) {
     return this.prisma.user.findUnique({
       where: { id },

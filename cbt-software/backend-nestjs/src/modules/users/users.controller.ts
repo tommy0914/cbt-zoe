@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Put, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Put, Query, UseGuards, Req } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { UsersService } from './users.service';
 
@@ -8,7 +8,11 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Get('search')
-  async search(@Query('email') email: string) {
+  async search(@Query('email') email: string, @Query('q') query: string, @Req() req: any) {
+    if (query) {
+      const users = await this.usersService.searchUsers(query, req.user.schoolId);
+      return { users: users.map((u: any) => ({ ...u, _id: u.id })) };
+    }
     const users = await this.usersService.searchByEmail(email || '');
     return { users: users.map((u: any) => ({ ...u, _id: u.id })) };
   }

@@ -29,7 +29,7 @@ export class AuthService {
 
     const accessToken = await this.jwtService.signAsync(accessPayload, {
       secret: process.env.JWT_SECRET || 'fallback_secret',
-      expiresIn: '15m',
+      expiresIn: '24h', // Increased for testing convenience
     });
     const refreshToken = await this.jwtService.signAsync(refreshPayload, {
       secret: process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET || 'fallback_secret',
@@ -100,7 +100,7 @@ export class AuthService {
         refreshToken,
         userId: freshUser.id,
         user: this.normalizeAuthUser(freshUser),
-        expiresIn: 900,
+        expiresIn: 86400, // 24 hours in seconds
       };
     }
     throw new UnauthorizedException('Invalid credentials');
@@ -132,7 +132,7 @@ export class AuthService {
       refreshToken,
       userId: user.id,
       user: this.normalizeAuthUser(user),
-      expiresIn: 900,
+      expiresIn: 86400,
     };
   }
 
@@ -189,7 +189,7 @@ export class AuthService {
       token: pair.accessToken,
       accessToken: pair.accessToken,
       refreshToken: pair.refreshToken,
-      expiresIn: 900,
+      expiresIn: 86400,
     };
   }
 }

@@ -9,14 +9,45 @@ export class TestsController {
   @UseGuards(JwtAuthGuard)
   @Post()
   async create(@Request() req: any, @Body() body: any) {
-    const { questionIds, classId, ...testData } = body;
-    const data = {
-      ...testData,
-      title: testData.title || testData.testName || 'Untitled Test',
+    const { questionIds, classId, title, testName, durationMinutes, description, questionDistribution, ...rest } = body;
+    
+    const data: any = {
+      title: title || testName || 'Untitled Test',
+      durationMinutes: Number(durationMinutes || 60),
+      description: description || '',
       classroom: { connect: { id: classId } },
-      createdBy: { connect: { id: req.user.userId } },
-      questions: { connect: questionIds.map((id: string) => ({ id })) }
+      createdBy: { connect: { id: req.user.userId } }
     };
+
+    // Include other valid fields
+    if (body.passingMarks) data.passingMarks = Number(body.passingMarks);
+    if (body.passingScorePercentage) {
+      // Logic to set passingMarks based on percentage can be complex without totalMarks yet,
+      // but we'll store a reasonable default or pass it as is if schema allowed.
+      // PassingMarks is an Int in schema.
+    }
+    if (body.shuffleQuestions !== undefined) data.shuffleQuestions = body.shuffleQuestions;
+    if (body.showAnswerAfterSubmit !== undefined) data.showAnswerAfterSubmit = body.showAnswerAfterSubmit;
+    if (body.scheduledDate || body.availableFrom) data.scheduledDate = new Date(body.scheduledDate || body.availableFrom);
+    if (body.scheduledEndDate || body.availableUntil) data.scheduledEndDate = new Date(body.scheduledEndDate || body.availableUntil);
+
+    let finalQuestionIds = questionIds || [];
+
+    // Auto-pick questions based on distribution if no specific IDs provided
+    const sId = req.user.schoolId; // Always use current admin's school for auto-picking
+    if (finalQuestionIds.length === 0 && questionDistribution && Array.isArray(questionDistribution)) {
+      for (const dist of questionDistribution) {
+        if (dist.subject && dist.count > 0) {
+          const picked = await this.testsService.pickRandomQuestions(dist.subject, Number(dist.count), sId);
+          finalQuestionIds = [...finalQuestionIds, ...picked.map(q => q.id)];
+        }
+      }
+    }
+
+    if (finalQuestionIds.length > 0) {
+      data.questions = { connect: finalQuestionIds.map((id: string) => ({ id })) };
+    }
+    
     const test = await this.testsService.create(data);
     const updated = (await this.testsService.calculateTotalMarks(test.id)) || test;
     return { message: 'Test created', test: { ...updated, _id: updated.id, testName: updated.title } };

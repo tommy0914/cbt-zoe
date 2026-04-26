@@ -1,10 +1,10 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import './Sidebar.css';
 
 export default function Sidebar() {
-  const user = JSON.parse(localStorage.getItem('auth'))?.user;
-  const role = user?.role;
+  const { user, role, logout } = useAuth();
 
   return (
     <aside className="sidebar">
@@ -35,12 +35,15 @@ export default function Sidebar() {
       </nav>
       <div className="sidebar-footer">
         <div className="user-profile">
-          <div className="user-avatar">{user?.name?.charAt(0)}</div>
+          <div className="user-avatar">{user?.name?.charAt(0) || user?.username?.charAt(0) || 'U'}</div>
           <div className="user-info">
-            <span className="user-name">{user?.name}</span>
-            <span className="user-role">{role}</span>
+            <span className="user-name">{user?.name || user?.username || 'User'}</span>
+            <span className="user-role">{user?.role || role}</span>
           </div>
         </div>
+        <button onClick={logout} className="logout-btn" title="Logout">
+          🚪 Logout
+        </button>
       </div>
     </aside>
   );

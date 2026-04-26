@@ -16,8 +16,9 @@ export class QuestionsService {
     });
   }
 
-  async findAll() {
+  async findAll(schoolId?: string) {
     return this.prisma.question.findMany({
+      where: schoolId ? { schoolId } : {},
       include: { createdBy: { select: { name: true, email: true } } }
     });
   }
@@ -33,6 +34,25 @@ export class QuestionsService {
     return this.prisma.question.update({
       where: { id },
       data,
+    });
+  }
+
+  async getSubjects(schoolId?: string) {
+    const questions = await this.prisma.question.findMany({
+      where: schoolId ? { schoolId } : {},
+      select: { tags: true },
+    });
+    const allTags = questions.flatMap(q => q.tags);
+    return Array.from(new Set(allTags));
+  }
+
+  async findBySubject(subject: string, schoolId?: string) {
+    return this.prisma.question.findMany({
+      where: {
+        tags: { has: subject },
+        ...(schoolId ? { schoolId } : {})
+      },
+      include: { createdBy: { select: { name: true, email: true } } }
     });
   }
 

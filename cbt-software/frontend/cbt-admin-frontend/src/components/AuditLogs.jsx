@@ -13,7 +13,7 @@ export default function AuditLogs({ token }) {
 
   useEffect(() => {
     fetchLogs();
-  }, [limit]); // Fetch immediately on load. Debounce filter changes or require button click for filters.
+  }, [limit]);
 
   const fetchLogs = async () => {
     setLoading(true);
@@ -44,7 +44,6 @@ export default function AuditLogs({ token }) {
     setActionFilter('');
     setResourceTypeFilter('');
     setLimit(100);
-    // State updates are async, so we just clear the params immediately in a manual fetch
     setTimeout(() => {
       fetchLogs();
     }, 0);
@@ -66,7 +65,7 @@ export default function AuditLogs({ token }) {
       </div>
 
       <div style={{ background: '#f1f5f9', padding: '16px', borderRadius: '8px', marginBottom: '20px' }}>
-        <h4 style={{ margin: '0 0 12px 0', fontSize: '14px', color: '#475569' }}>Filter Logs</h4>
+        <h4 style={{ margin: '0 0 12px 0', fontSize: '14px', color: '#475569' }}>Filter Activity</h4>
         <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
           <div style={{ flex: 1, minWidth: '150px' }}>
             <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#64748b' }}>User ID</label>
@@ -75,16 +74,6 @@ export default function AuditLogs({ token }) {
               placeholder="e.g. 64b8f..." 
               value={userIdFilter} 
               onChange={e => setUserIdFilter(e.target.value)}
-              style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }}
-            />
-          </div>
-          <div style={{ flex: 1, minWidth: '150px' }}>
-            <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#64748b' }}>Action</label>
-            <input 
-              type="text" 
-              placeholder="e.g. create_user" 
-              value={actionFilter} 
-              onChange={e => setActionFilter(e.target.value)}
               style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e1' }}
             />
           </div>
@@ -132,7 +121,7 @@ export default function AuditLogs({ token }) {
         <div style={{ textAlign: 'center', padding: '20px', color: '#64748b' }}>Loading audit logs...</div>
       ) : logs.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '20px', background: '#f8fafc', borderRadius: '8px', color: '#64748b' }}>
-          No audit logs found matching your criteria.
+          No activity logs found.
         </div>
       ) : (
         <div style={{ overflowX: 'auto' }}>
@@ -140,10 +129,8 @@ export default function AuditLogs({ token }) {
             <thead>
               <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0', textAlign: 'left' }}>
                 <th style={{ padding: '12px', color: '#475569' }}>Timestamp</th>
-                <th style={{ padding: '12px', color: '#475569' }}>Action</th>
+                <th style={{ padding: '12px', color: '#475569' }}>Description of Activity</th>
                 <th style={{ padding: '12px', color: '#475569' }}>Actor (User)</th>
-                <th style={{ padding: '12px', color: '#475569' }}>Resource</th>
-                <th style={{ padding: '12px', color: '#475569' }}>Details</th>
                 <th style={{ padding: '12px', color: '#475569' }}>IP Address</th>
               </tr>
             </thead>
@@ -154,43 +141,16 @@ export default function AuditLogs({ token }) {
                     {new Date(log.createdAt).toLocaleString()}
                   </td>
                   <td style={{ padding: '12px' }}>
-                    <span style={{ 
-                      background: '#ccfbf1', 
-                      color: '#0f766e', 
-                      padding: '2px 8px', 
-                      borderRadius: '12px', 
-                      fontWeight: 'bold',
-                      fontSize: '12px'
-                    }}>
-                      {log.action}
-                    </span>
+                    <div style={{ fontWeight: '600', color: '#111827', fontSize: '15px' }}>
+                      {log.description || log.action}
+                    </div>
+                    <div style={{ fontSize: '11px', color: '#9ca3af', marginTop: '4px' }}>
+                      Resource: {log.resourceType || 'system'} {log.resourceId ? `(ID: ${log.resourceId})` : ''}
+                    </div>
                   </td>
                   <td style={{ padding: '12px' }}>
-                    <div style={{ fontWeight: 'bold', color: '#334155' }}>{log.userName || 'Unknown User'}</div>
-                    <div style={{ fontSize: '11px', color: '#94a3b8' }}>ID: {log.userId}</div>
+                    <div style={{ fontWeight: 'bold', color: '#334155' }}>{log.userName || log.username || 'Unknown User'}</div>
                     <div style={{ fontSize: '11px', color: '#64748b', textTransform: 'uppercase' }}>{log.userRole || 'N/A'}</div>
-                  </td>
-                  <td style={{ padding: '12px' }}>
-                    <div style={{ fontWeight: '500', color: '#475569' }}>{log.resourceType || 'system'}</div>
-                    <div style={{ fontSize: '11px', color: '#94a3b8' }}>{log.resourceId ? `ID: ${log.resourceId}` : ''}</div>
-                  </td>
-                  <td style={{ padding: '12px', maxWidth: '300px' }}>
-                    {Object.keys(log.details || {}).length > 0 ? (
-                      <pre style={{ 
-                        margin: 0, 
-                        background: '#f8fafc', 
-                        padding: '8px', 
-                        borderRadius: '4px', 
-                        fontSize: '11px',
-                        overflowX: 'auto',
-                        border: '1px solid #e2e8f0',
-                        color: '#475569'
-                      }}>
-                        {JSON.stringify(log.details, null, 2)}
-                      </pre>
-                    ) : (
-                      <span style={{ color: '#cbd5e1', fontSize: '12px' }}>None</span>
-                    )}
                   </td>
                   <td style={{ padding: '12px', color: '#64748b', fontSize: '12px' }}>
                     {log.ip || 'Unknown'}

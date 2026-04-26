@@ -71,16 +71,23 @@ export class EnrollmentService {
     if (!classroom) throw new NotFoundException('Classroom not found');
 
     const results = [];
+    // Hashed "ChangeMe123!" for initial accounts
+    const defaultPassword = await require('bcrypt').hash('ChangeMe123!', 10);
+
     for (const s of students) {
       try {
+        const email = s.email?.toLowerCase().trim();
+        if (!email) throw new Error('Email is required');
+
         // Find or create user
-        let user = await this.prisma.user.findUnique({ where: { email: s.email } });
+        let user = await this.prisma.user.findUnique({ where: { email } });
         if (!user) {
           user = await this.prisma.user.create({
             data: {
               name: s.name,
-              email: s.email,
-              password: '$2b$10$UnPredictablePasswordHashForBulkStudentEnrollment12345', // Use a standard default hash or generate one
+              email: email,
+              username: s.matricNo || email.split('@')[0],
+              password: defaultPassword,
               role: Role.student,
               schoolId: schoolId,
               mustChangePassword: true,
@@ -95,7 +102,7 @@ export class EnrollmentService {
             members: { connect: { id: user.id } },
           },
         });
-        results.push({ email: s.email, status: 'enrolled' });
+        results.push({ email, name: s.name, status: 'enrolled' });
       } catch (err: any) {
         results.push({ email: s.email, status: 'error', message: err.message });
       }

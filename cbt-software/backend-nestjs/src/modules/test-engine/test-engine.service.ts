@@ -9,6 +9,7 @@ export class TestEngineService {
   async getTestsByClass(classId: string) {
     return this.prisma.test.findMany({
       where: { classId },
+      include: { questions: { select: { id: true } } },
       orderBy: { createdAt: 'desc' },
     });
   }
@@ -19,17 +20,24 @@ export class TestEngineService {
       include: { questions: true },
     });
     if (!test) throw new NotFoundException('Test not found');
+
+    // Shuffle questions if enabled
+    if (test.shuffleQuestions && test.questions) {
+      test.questions = test.questions.sort(() => Math.random() - 0.5);
+    }
+
     return test;
   }
 
   async startOrResumeAttempt(studentId: string, testId: string) {
     const existing = await this.prisma.attempt.findFirst({
       where: { studentId, testId, status: AttemptStatus.in_progress },
+      include: { responses: true }
     });
 
-    if (existing) return existing;
+    if (existing) return { attempt: existing };
 
-    return this.prisma.attempt.create({
+    const attempt = await this.prisma.attempt.create({
       data: {
         studentId,
         testId,
@@ -37,6 +45,7 @@ export class TestEngineService {
         startTime: new Date(),
       },
     });
+    return { attempt };
   }
 
   async saveProgress(studentId: string, testId: string, responses: { questionId: string; answer: string }[]) {
@@ -46,7 +55,6 @@ export class TestEngineService {
 
     if (!attempt) throw new NotFoundException('Active attempt not found');
 
-    // Simple overwrite of responses for auto-save
     await this.prisma.response.deleteMany({ where: { attemptId: attempt.id } });
 
     return this.prisma.response.createMany({
@@ -73,7 +81,7 @@ export class TestEngineService {
       const question = await this.prisma.question.findUnique({ where: { id: r.questionId } });
       if (!question) continue;
 
-      const isCorrect = question.correctAnswer.toLowerCase().trim() === r.answer?.toLowerCase().trim();
+      const isCorrect = (question.correctAnswer || '').toLowerCase().trim() === (r.answer || '').toLowerCase().trim();
       const pointsAwarded = isCorrect ? question.points : 0;
       totalScore += pointsAwarded;
 
@@ -90,7 +98,8 @@ export class TestEngineService {
       data: gradedResponses.map(gr => ({ ...gr, attemptId: attempt.id }))
     });
 
-    const percentage = Math.round((totalScore / attempt.test.totalMarks) * 100);
+    const totalPossibleMarks = attempt.test.totalMarks || 1;
+    const percentage = Math.round((totalScore / totalPossibleMarks) * 100);
 
     const updatedAttempt = await this.prisma.attempt.update({
       where: { id: attempt.id },
@@ -102,10 +111,10 @@ export class TestEngineService {
       },
     });
 
-    // ============ UPDATE LEADERBOARD ============
+    // ============ UPDATE LEADERBOARD & CERTIFICATES ============
     try {
       const student = await this.prisma.user.findUnique({ where: { id: studentId } });
-      const passed = totalScore >= attempt.test.passingMarks;
+      const passed = totalScore >= (attempt.test.passingMarks || 0);
 
       const leaderboardEntry = await this.prisma.leaderboard.findFirst({
         where: { studentId, classId: attempt.test.classId },
@@ -118,7 +127,7 @@ export class TestEngineService {
             testsAttempted: { increment: 1 },
             totalScore: { increment: totalScore },
             averageScore: (leaderboardEntry.totalScore + totalScore) / (leaderboardEntry.testsAttempted + 1),
-            points: { increment: Math.floor((totalScore / attempt.test.totalMarks) * 100) },
+            points: { increment: percentage },
             passCount: passed ? { increment: 1 } : undefined,
             streak: passed ? { increment: 1 } : 0,
             lastUpdated: new Date(),
@@ -135,14 +144,13 @@ export class TestEngineService {
             testsAttempted: 1,
             totalScore,
             averageScore: percentage,
-            points: Math.floor((totalScore / attempt.test.totalMarks) * 100),
+            points: percentage,
             passCount: passed ? 1 : 0,
             streak: passed ? 1 : 0,
           },
         });
       }
 
-      // ============ GENERATE CERTIFICATE ============
       if (passed) {
         await this.prisma.certificate.create({
           data: {
@@ -162,9 +170,8 @@ export class TestEngineService {
       }
     } catch (error) {
       console.error('Error updating leaderboard/certificates:', error);
-      // Don't fail the submission if leaderboard update fails
     }
 
-    return updatedAttempt;
-    }
-    }
+    return { attempt: updatedAttempt };
+  }
+}

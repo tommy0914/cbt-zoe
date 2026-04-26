@@ -8,8 +8,9 @@ export class SchoolsController {
   constructor(private readonly schoolsService: SchoolsService) {}
 
   @Post()
-  async create(@Body() body: { name: string; adminId: string; superAdminId: string }) {
-    const school = await this.schoolsService.createSchool(body.name, body.adminId, body.superAdminId || body.adminId);
+  async create(@Body() body: { name: string; adminId: string; superAdminId?: string }, @Req() req: any) {
+    const superAdminId = req.user.userId || body.superAdminId || body.adminId;
+    const school = await this.schoolsService.createSchool(body.name, body.adminId, superAdminId);
     return { school: { ...school, _id: school.id } };
   }
 

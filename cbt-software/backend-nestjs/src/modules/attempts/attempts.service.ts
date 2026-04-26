@@ -71,4 +71,20 @@ export class AttemptsService {
       include: { responses: true, test: true },
     });
   }
+
+  async deleteAttempt(id: string) {
+    // Delete all responses first due to foreign key constraints
+    await this.prisma.response.deleteMany({
+      where: { attemptId: id },
+    });
+    
+    // Also delete from test metrics if any exist
+    await this.prisma.testAttemptMetric.deleteMany({
+      where: { attemptId: id }
+    });
+
+    return this.prisma.attempt.delete({
+      where: { id },
+    });
+  }
 }

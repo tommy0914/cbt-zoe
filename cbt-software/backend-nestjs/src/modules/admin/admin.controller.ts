@@ -17,6 +17,16 @@ export class AdminController {
     return this.adminService.createStudent(body);
   }
 
+  @Post('reset-password')
+  async resetPassword(@Body() body: { userId: string, password?: string }) {
+    return this.adminService.resetPassword(body.userId, body.password);
+  }
+
+  @Post('promote-student')
+  async promoteStudent(@Body() body: { studentId: string, fromClassId: string, toClassId: string }) {
+    return this.adminService.promoteStudent(body.studentId, body.fromClassId, body.toClassId);
+  }
+
   @Post('assign-teacher')
   async assignTeacher(@Body('email') email: string, @Req() req: any) {
     return this.adminService.assignTeacher(email, req.user.schoolId);

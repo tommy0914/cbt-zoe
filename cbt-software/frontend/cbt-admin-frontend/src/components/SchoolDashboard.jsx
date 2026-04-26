@@ -33,8 +33,15 @@ const SchoolDashboard = () => {
     
     try {
       const res = await api.post('/api/schools', { name: schoolName, adminId }, token);
-      if (res) {
-        setSchools([...schools, res]);
+      if (res && res.school) {
+        setSchools([...schools, res.school]);
+        setSchoolName('');
+        setAdminId('');
+        setAdminName('');
+        alert('School created successfully!');
+      } else if (res && res.success && res.school) {
+        // Handle variations in response format if any
+        setSchools([...schools, res.school]);
         setSchoolName('');
         setAdminId('');
         setAdminName('');
@@ -100,7 +107,7 @@ const SchoolDashboard = () => {
           {schools.map((school) => (
             <div key={school._id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '15px', background: '#f1f5f9', borderLeft: '4px solid #3b82f6', borderRadius: '4px' }}>
               <div>
-                <strong style={{ fontSize: '1.1rem' }}>{school.name.toUpperCase()}</strong>
+                <strong style={{ fontSize: '1.1rem' }}>{(school.name || 'Unnamed School').toUpperCase()}</strong>
                 <div style={{ fontSize: '13px', color: '#64748b', marginTop: '4px' }}>
                   School ID / DB Reference: {school._id}
                 </div>

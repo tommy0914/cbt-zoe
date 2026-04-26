@@ -229,7 +229,7 @@ const StudentResults = ({ classId, className, onClose }) => {
 
   // Delete result
   const handleDeleteResult = async (resultId) => {
-    if (!window.confirm('Are you sure you want to delete this result?')) return;
+    if (!window.confirm('Are you sure you want to delete this summary result?')) return;
 
     try {
       const response = await api.delete(`/api/reports/student-result/${resultId}`);
@@ -242,6 +242,34 @@ const StudentResults = ({ classId, className, onClose }) => {
     } catch (error) {
       console.error('Error deleting result:', error);
       setMessage('Failed to delete result');
+    }
+  };
+
+  // Reset specific test attempt
+  const handleResetAttempt = async (attemptId) => {
+    if (!window.confirm('Are you sure you want to reset this attempt? The student will be able to retake the test, and their current score for this specific attempt will be deleted.')) return;
+
+    try {
+      const token = JSON.parse(localStorage.getItem('auth'))?.token;
+      const response = await api.delete(`/api/attempts/${attemptId}`, token);
+      
+      if (!response.error) {
+        setMessage('Attempt reset successfully! ✓');
+        // Refresh detailed view if we are looking at one
+        if (detailedResult) {
+          handleViewResult(detailedResult._id);
+        }
+        // Refresh main list
+        const refreshData = await api.get(`/api/reports/student-results/${classId}`, token);
+        setResults(refreshData.results || []);
+        
+        setTimeout(() => setMessage(''), 3000);
+      } else {
+        setMessage(`Error: ${response.message || 'Failed to reset attempt'}`);
+      }
+    } catch (error) {
+      console.error('Error resetting attempt:', error);
+      setMessage('Failed to reset attempt');
     }
   };
 
@@ -547,6 +575,7 @@ const StudentResults = ({ classId, className, onClose }) => {
                     <th>Duration</th>
                     <th>Status</th>
                     <th>Date</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -560,6 +589,27 @@ const StudentResults = ({ classId, className, onClose }) => {
                         <span className={`badge ${test.status}`}>{test.status}</span>
                       </td>
                       <td>{new Date(test.completedAt).toLocaleDateString()}</td>
+                      <td>
+                        {test.attemptId && (
+                          <button 
+                            className="reset-btn" 
+                            onClick={() => handleResetAttempt(test.attemptId)}
+                            title="Reset this specific attempt"
+                            style={{ 
+                              background: '#fff7ed', 
+                              color: '#c2410c', 
+                              border: '1px solid #fdba74', 
+                              padding: '4px 8px', 
+                              borderRadius: '4px', 
+                              cursor: 'pointer',
+                              fontSize: '12px',
+                              fontWeight: '600'
+                            }}
+                          >
+                            🔄 Reset
+                          </button>
+                        )}
+                      </td>
                     </tr>
                   ))}
                 </tbody>

@@ -21,6 +21,7 @@ const AnalyticsDashboard = lazy(() => import('../components/AnalyticsDashboard')
 const TestForm = lazy(() => import('../components/TestForm'));
 const UserManagement = lazy(() => import('../components/UserManagement')); 
 const EnrollmentManagement = lazy(() => import('../components/EnrollmentManagement'));
+const SchoolCalendar = lazy(() => import('../components/SchoolCalendar'));
 
 function AdminDashboard() {
   const auth = JSON.parse(localStorage.getItem('auth'));
@@ -44,6 +45,7 @@ function AdminDashboard() {
   const [showTestForm, setShowTestForm] = useState(false);
   const [showEnrollmentManagement, setShowEnrollmentManagement] = useState(false);
   const [showAuditLogs, setShowAuditLogs] = useState(false);
+  const [showCalendar, setShowCalendar] = useState(false);
   const [tests, setTests] = useState([]);
   const [editingTest, setEditingTest] = useState(null);
 
@@ -269,6 +271,32 @@ function AdminDashboard() {
           )}
         </div>
       )}
+
+      <div style={{ marginTop: 12, marginBottom: 20 }}>
+        <button 
+          onClick={() => setShowCalendar(!showCalendar)}
+          style={{ 
+            width: '100%', 
+            padding: '12px', 
+            background: 'linear-gradient(135deg, #0f172a 0%, #334155 100%)', 
+            color: 'white', 
+            fontWeight: 'bold', 
+            borderRadius: '8px',
+            border: 'none',
+            cursor: 'pointer',
+            fontSize: '16px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '10px'
+          }}
+        >
+          {showCalendar ? '📅 Hide Academic Calendar' : '📅 Manage Academic Calendar (Sessions & Terms)'}
+        </button>
+        <Suspense fallback={loadingSuspense}>
+          {showCalendar && <SchoolCalendar token={token} />}
+        </Suspense>
+      </div>
 
       <div className="card" style={{ marginBottom: '20px' }}>
         <h4>Analytics & Reports</h4>
