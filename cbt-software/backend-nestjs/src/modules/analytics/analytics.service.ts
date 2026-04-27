@@ -198,6 +198,13 @@ export class AnalyticsService {
     });
   }
 
+  async getStudentResult(studentId: string, classId: string) {
+    return this.prisma.studentResult.findUnique({
+      where: { id: `${studentId}_${classId}` },
+      include: { subjectPerformance: true, testAttemptMetrics: true },
+    });
+  }
+
   async getClassPerformance(classId: string) {
     const attempts = await this.prisma.attempt.findMany({
       where: { test: { classId }, status: 'graded' },
