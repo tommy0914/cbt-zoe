@@ -53,9 +53,9 @@ export class EnrollmentService {
     return updated;
   }
 
-  async getPendingRequests(schoolId: string) {
+  async getPendingRequests(schoolId?: string) {
     return this.prisma.enrollmentRequest.findMany({
-      where: { schoolId, status: EnrollmentStatus.pending },
+      where: schoolId ? { schoolId, status: EnrollmentStatus.pending } : { status: EnrollmentStatus.pending },
       include: { student: { select: { name: true, email: true } }, classroom: { select: { name: true } } },
     });
   }
@@ -77,16 +77,26 @@ export class EnrollmentService {
     for (const s of students) {
       try {
         const email = s.email?.toLowerCase().trim();
-        if (!email) throw new Error('Email is required');
+        const matric = s.matricNo?.trim();
+        
+        if (!email && !matric) throw new Error('Either Email or Matric Number is required');
 
         // Find or create user
-        let user = await this.prisma.user.findUnique({ where: { email } });
+        let user = await this.prisma.user.findFirst({ 
+          where: { 
+            OR: [
+              email ? { email } : { id: 'none' }, 
+              matric ? { username: matric } : { id: 'none' }
+            ]
+          } 
+        });
+
         if (!user) {
           user = await this.prisma.user.create({
             data: {
-              name: s.name,
-              email: email,
-              username: s.matricNo || email.split('@')[0],
+              name: s.name || matric || 'Student',
+              email: email || null,
+              username: matric || email?.split('@')[0],
               password: defaultPassword,
               role: Role.student,
               schoolId: schoolId,

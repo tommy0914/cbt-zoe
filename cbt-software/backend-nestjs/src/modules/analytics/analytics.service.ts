@@ -26,10 +26,9 @@ export class AnalyticsService {
     const user = await this.prisma.user.findUnique({ where: { id: studentId } });
     const classroom = await this.prisma.classroom.findUnique({ where: { id: classId } });
 
-    // Calculate Subject Performance for the StudentResult summary
     const subjects: Record<string, { total: number; correct: number; count: number; tests: any[] }> = {};
     attempts.forEach(a => {
-      const subj = a.test.title.split(' ')[0] || 'General'; // fallback if no specific subject field
+      const subj = a.test.title.split(' ')[0] || 'General';
       if (!subjects[subj]) subjects[subj] = { total: 0, correct: 0, count: 0, tests: [] };
       subjects[subj].total += a.test.totalMarks;
       subjects[subj].correct += a.totalScore;
@@ -41,28 +40,54 @@ export class AnalyticsService {
     let totalGPAPoints = 0;
     let subjectCount = 0;
 
-    const subjectPerformanceData = Object.entries(subjects).map(([name, stats]) => {
+    Object.entries(subjects).forEach(([name, stats]) => {
       const percentage = (stats.correct / (stats.total || 1)) * 100;
       const grade = this.calculateGrade(percentage);
       totalGPAPoints += gpaPoints[grade] || 0;
       subjectCount++;
-      return {
-        subject: name,
-        percentage,
-        grade,
-        totalTests: stats.count,
-        totalMarks: stats.total,
-        obtainedMarks: stats.correct,
-        remarks: percentage >= 50 ? 'Pass' : 'Fail',
-        performanceStatus: this.getPerformanceStatus(percentage)
-      };
     });
 
     const overallGPA = subjectCount ? totalGPAPoints / subjectCount : 0;
     const overallGrade = this.calculateGrade(averageScore);
 
+    const resultId = `${studentId}_${classId}`;
+
+    // 1. Delete existing metrics to avoid duplicates on regeneration
+    await this.prisma.testAttemptMetric.deleteMany({ where: { studentResultId: resultId } });
+    await this.prisma.subjectPerformance.deleteMany({ where: { studentResultId: resultId } });
+
+    // 2. Prepare Metrics Data
+    const subjectPerformanceData = Object.entries(subjects).map(([name, stats]) => {
+      const percentage = (stats.correct / (stats.total || 1)) * 100;
+      return {
+        subject: name,
+        totalTests: stats.count,
+        averageScore: percentage,
+        highestScore: Math.max(...stats.tests.map(t => t.totalScore)),
+        lowestScore: Math.min(...stats.tests.map(t => t.totalScore)),
+        totalQuestions: stats.total,
+        correctAnswers: stats.correct,
+        passingRate: (stats.tests.filter(t => t.percentage >= 50).length / stats.count) * 100,
+        performanceGrade: this.calculateGrade(percentage),
+      };
+    });
+
+    const testAttemptMetricsData = attempts.map(a => ({
+      testId: a.testId,
+      testName: a.test.title,
+      subject: a.test.title.split(' ')[0] || 'General',
+      attemptId: a.id,
+      score: a.totalScore,
+      totalQuestions: a.test.totalMarks,
+      correctAnswers: a.totalScore,
+      duration: a.submitTime && a.startTime ? Math.round((a.submitTime.getTime() - a.startTime.getTime()) / 60000) : 0,
+      completedAt: a.submitTime,
+      status: a.percentage >= 50 ? 'passed' : 'failed',
+      isPassed: a.percentage >= 50,
+    }));
+
     return this.prisma.studentResult.upsert({
-      where: { id: `${studentId}_${classId}` },
+      where: { id: resultId },
       update: {
         totalTestsTaken,
         totalScoreObtained,
@@ -72,9 +97,15 @@ export class AnalyticsService {
         overallGPA,
         performanceGrade: overallGrade,
         updatedAt: new Date(),
+        subjectPerformance: {
+          create: subjectPerformanceData
+        },
+        testAttemptMetrics: {
+          create: testAttemptMetricsData
+        }
       },
       create: {
-        id: `${studentId}_${classId}`,
+        id: resultId,
         studentId,
         studentName: user?.name || 'Unknown',
         studentEmail: user?.email || 'Unknown',
@@ -88,6 +119,13 @@ export class AnalyticsService {
         lowestScore,
         overallGPA,
         performanceGrade: overallGrade,
+        isPublished: false,
+        subjectPerformance: {
+          create: subjectPerformanceData
+        },
+        testAttemptMetrics: {
+          create: testAttemptMetricsData
+        }
       },
     });
   }
@@ -111,17 +149,14 @@ export class AnalyticsService {
   }
 
   async generateReportCard(studentId: string, classId: string, adminId: string, dto: any) {
-    // 1. Ensure latest performance data is calculated
     await this.generateStudentReport(studentId, classId);
     
     const studentResult = await this.prisma.studentResult.findFirst({
       where: { studentId, classId },
-      include: { testAttemptMetrics: { include: { test: true } } }
     });
 
     if (!studentResult) throw new Error('Failed to retrieve student metrics');
 
-    // 2. Aggregate Subject Grades and Test Breakdown
     const attempts = await this.prisma.attempt.findMany({
       where: { studentId, test: { classId }, status: 'graded' },
       include: { test: true }
@@ -129,7 +164,6 @@ export class AnalyticsService {
 
     const subjects: Record<string, any> = {};
     attempts.forEach(a => {
-      // In a real system, we'd use test.subject, but here we'll infer or use tags
       const subj = a.test.title.split(':')[0] || 'General'; 
       if (!subjects[subj]) subjects[subj] = { name: subj, totalMarks: 0, obtained: 0, count: 0, tests: [] };
       
@@ -166,7 +200,6 @@ export class AnalyticsService {
       tests: s.tests
     }));
 
-    // 3. Create the ReportCard
     return this.prisma.reportCard.create({
       data: {
         studentId,
@@ -186,6 +219,7 @@ export class AnalyticsService {
         testBreakdown: testBreakdown as any,
         teacherRemarks: "Satisfactory performance. Keep it up.",
         generatedById: adminId,
+        isPublished: false, // Hidden by default
       },
     });
   }
@@ -215,12 +249,7 @@ export class AnalyticsService {
 
     const averageScore = attempts.reduce((sum, a) => sum + (a.percentage || 0), 0) / attempts.length;
 
-    const distribution = {
-      '0-40': 0,
-      '41-60': 0,
-      '61-80': 0,
-      '81-100': 0,
-    };
+    const distribution = { '0-40': 0, '41-60': 0, '61-80': 0, '81-100': 0 };
 
     attempts.forEach(a => {
       const p = a.percentage || 0;
@@ -230,11 +259,7 @@ export class AnalyticsService {
       else distribution['81-100']++;
     });
 
-    return {
-      averageScore,
-      totalAttempts: attempts.length,
-      distribution,
-    };
+    return { averageScore, totalAttempts: attempts.length, distribution };
   }
 
   async getClassInsights(classId: string) {
@@ -294,10 +319,7 @@ export class AnalyticsService {
       }
     }
 
-    return {
-      subjectPerformance,
-      atRiskStudents: atRiskStudents.sort((a, b) => b.drop - a.drop),
-    };
+    return { subjectPerformance, atRiskStudents: atRiskStudents.sort((a, b) => b.drop - a.drop) };
   }
 
   async getQuestionDifficulty(schoolId: string) {

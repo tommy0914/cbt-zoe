@@ -86,7 +86,7 @@ model AcademicTerm {
 model User {
   id                    String    @id @default(uuid())
   name                  String
-  email                 String    @unique
+  email                 String?   @unique
   username              String?   @unique
   password              String
   role                  Role
@@ -105,6 +105,10 @@ model User {
   isEmailVerified       Boolean   @default(false)
   emailVerificationToken String?
   profilePicture        String?
+  staffId               String?
+  department            String?
+  level                 String?
+  matricNumber          String?
   schoolId              String?
   school                School?   @relation("UserSchool", fields: [schoolId], references: [id])
   managedSchools        School[]  @relation("SchoolAdmin")
@@ -320,6 +324,7 @@ model StudentResult {
   passingRate           Float     @default(0)
   ranking               Int?
   performanceGrade      String    @default("F")
+  isPublished           Boolean   @default(false)
   generatedAt           DateTime  @default(now())
   generatedById         String?
   generatedBy           User?     @relation("StudentResultGenerator", fields: [generatedById], references: [id])

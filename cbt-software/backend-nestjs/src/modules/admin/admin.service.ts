@@ -11,6 +11,8 @@ export class AdminService {
     const email = String(body.email || '').toLowerCase().trim();
     const name = String(body.name || '').trim();
     const schoolId = body.schoolId || null;
+    const department = body.department || null;
+    const staffId = body.staffId || null;
     const password = body.password || 'ChangeMe123!';
     const hashed = await bcrypt.hash(password, 10);
 
@@ -21,7 +23,9 @@ export class AdminService {
         password: hashed,
         role: Role.teacher,
         schoolId,
-        username: email.split('@')[0],
+        department,
+        staffId,
+        username: staffId || email.split('@')[0],
         mustChangePassword: true,
       },
     });
@@ -30,13 +34,16 @@ export class AdminService {
   }
 
   async createStudent(body: any) {
-    const matric = body.matricNumber ? String(body.matricNumber).toLowerCase().trim() : undefined;
-    const email = body.email ? String(body.email).toLowerCase().trim() : `${matric || Date.now()}@student.local`;
+    const matric = body.matricNumber ? String(body.matricNumber).trim() : undefined;
+    const email = body.email ? String(body.email).toLowerCase().trim() : null;
     const name = String(body.name || '').trim();
+    const level = body.level || null;
     const schoolId = body.schoolId || null;
     const password = body.password || 'ChangeMe123!';
     const mustChange = body.mustChangePassword !== undefined ? body.mustChangePassword : true;
     
+    if (!email && !matric) throw new Error('Either Email or Matric Number is required');
+
     const hashed = await bcrypt.hash(password, 10);
 
     const student = await this.prisma.user.create({
@@ -46,7 +53,9 @@ export class AdminService {
         password: hashed,
         role: Role.student,
         schoolId,
-        username: matric || email.split('@')[0],
+        level,
+        matricNumber: matric,
+        username: matric || email?.split('@')[0],
         mustChangePassword: mustChange,
       },
     });

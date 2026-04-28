@@ -13,6 +13,7 @@ const StudentResults = ({ classId, className, onClose }) => {
   const [message, setMessage] = useState('');
   const [activeTab, setActiveTab] = useState('list'); // list, detail, reportcard
   const [notes, setNotes] = useState('');
+  const [isPublished, setIsPublished] = useState(false);
   const [filterGrade, setFilterGrade] = useState('all');
   const [showReportCard, setShowReportCard] = useState(null);
   const [reportCardData, setReportCardData] = useState(null);
@@ -151,6 +152,7 @@ const StudentResults = ({ classId, className, onClose }) => {
       if (!data.error) {
         setDetailedResult(data);
         setNotes(data.notes || '');
+        setIsPublished(data.isPublished || false);
         setActiveTab('detail');
       } else {
         setMessage('Failed to load result details');
@@ -168,15 +170,18 @@ const StudentResults = ({ classId, className, onClose }) => {
     if (!detailedResult) return;
 
     try {
-      const data = await api.put(`/api/reports/student-result/${detailedResult._id}`, { notes });
+      const data = await api.put(`/api/reports/student-result/${detailedResult._id}`, { 
+        notes,
+        isPublished 
+      });
       if (!data.error) {
         setDetailedResult(data.result);
-        setMessage('Notes updated successfully! ✓');
+        setMessage('Result updated successfully! ✓');
         setTimeout(() => setMessage(''), 2000);
       }
     } catch (error) {
       console.error('Error updating notes:', error);
-      setMessage('Failed to update notes');
+      setMessage('Failed to update result');
     }
   };
 
@@ -617,7 +622,7 @@ const StudentResults = ({ classId, className, onClose }) => {
             </div>
 
             <div className="notes-section">
-              <h4>📝 Teacher Notes</h4>
+              <h4>📝 Teacher Notes & Publication</h4>
               <textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
@@ -625,8 +630,22 @@ const StudentResults = ({ classId, className, onClose }) => {
                 className="notes-input"
                 rows="4"
               />
+              
+              <div style={{ margin: '15px 0', display: 'flex', alignItems: 'center', gap: '10px', background: '#f8fafc', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                <input 
+                  type="checkbox" 
+                  id="publish-result"
+                  checked={isPublished}
+                  onChange={(e) => setIsPublished(e.target.checked)}
+                  style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                />
+                <label htmlFor="publish-result" style={{ fontWeight: '600', color: '#334155', cursor: 'pointer' }}>
+                  📢 Publish result (Visible to student/parent)
+                </label>
+              </div>
+
               <button className="update-notes-btn" onClick={handleUpdateNotes}>
-                💾 Save Notes
+                💾 Save Changes
               </button>
             </div>
 

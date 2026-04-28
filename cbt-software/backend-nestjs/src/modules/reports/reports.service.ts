@@ -10,66 +10,54 @@ export class ReportsService {
   ) {}
 
   async getOverallPerformance(schoolId?: string) {
-    const where: any = { status: 'graded' };
-    if (schoolId) where.test = { classroom: { schoolId } };
-    const attempts = await this.prisma.attempt.findMany({ where, select: { percentage: true, totalScore: true } });
-    const total = attempts.length;
-    const averagePercentage = total ? attempts.reduce((s, a) => s + (a.percentage || 0), 0) / total : 0;
-    return { totalAttempts: total, averagePercentage };
+    return this.analyticsService.getClassPerformance(schoolId || '');
   }
 
   async getQuestionDifficulty(schoolId: string) {
     return this.analyticsService.getQuestionDifficulty(schoolId);
   }
 
-  async getClassPerformance(classId?: string) {
-    if (!classId) {
-      return { averageScore: 0, totalAttempts: 0, distribution: {} };
-    }
-    return this.analyticsService.getClassPerformance(classId);
-  }
-
   async getStudentResults(classId: string) {
     const results = await this.prisma.studentResult.findMany({
       where: { classId },
-      include: {
+      include: { 
         student: { select: { id: true, name: true, email: true } },
         testAttemptMetrics: true,
+        subjectPerformance: true,
       },
       orderBy: { averageScore: 'desc' },
     });
-    return results.map((r: any) => ({
-      ...r,
-      _id: r.id,
-      studentId: r.student ? { ...r.student, _id: r.student.id } : null,
-      testAttempts: r.testAttemptMetrics.map((m: any) => ({
-        testName: m.testName,
-        score: m.score,
-        totalQuestions: m.totalQuestions,
-        correctAnswers: m.correctAnswers,
-        duration: m.duration || 0,
-        status: m.status,
-        isPassed: m.isPassed,
-        completedAt: m.completedAt || r.generatedAt,
-        attemptId: m.attemptId,
+    
+    return {
+      results: results.map((r: any) => ({
+        ...r,
+        _id: r.id,
+        studentId: r.student ? { ...r.student, _id: r.student.id } : null,
+        testAttempts: r.testAttemptMetrics.map((m: any) => ({
+          testName: m.testName,
+          score: m.score,
+          totalQuestions: m.totalQuestions,
+          correctAnswers: m.correctAnswers,
+          duration: m.duration || 0,
+          status: m.status,
+          isPassed: m.isPassed,
+          completedAt: m.completedAt || r.generatedAt,
+          attemptId: m.attemptId,
+        })),
       })),
-    }));
+    };
   }
 
   async generateStudentResult(studentId: string, classId: string, generatedById: string, notes?: string) {
     const result = await this.analyticsService.generateStudentReport(studentId, classId);
-    if (!result) return null;
-    const updated = await this.prisma.studentResult.update({
+    if (!result) return { error: 'No attempts found to generate result' };
+
+    await this.prisma.studentResult.update({
       where: { id: result.id },
-      data: { notes: notes || result.notes, generatedById },
-      include: { student: { select: { id: true, name: true, email: true } }, testAttemptMetrics: true },
+      data: { generatedById, notes },
     });
-    return {
-      ...updated,
-      _id: updated.id,
-      studentId: updated.student ? { ...updated.student, _id: updated.student.id } : null,
-      testAttempts: updated.testAttemptMetrics,
-    };
+
+    return { result: { ...result, _id: result.id } };
   }
 
   async getStudentResult(id: string) {
@@ -77,20 +65,22 @@ export class ReportsService {
       where: { id },
       include: {
         student: { select: { id: true, name: true, email: true } },
+        classroom: { select: { name: true } },
         testAttemptMetrics: true,
       },
     });
-    if (!result) return null;
-    return {
-      ...result,
-      _id: result.id,
-      studentId: result.student ? { ...result.student, _id: result.student.id } : null,
-      testAttempts: result.testAttemptMetrics,
-    };
+    return { ...result, _id: result?.id };
   }
 
   async updateStudentResult(id: string, body: any) {
-    return this.prisma.studentResult.update({ where: { id }, data: { notes: body.notes } });
+    const result = await this.prisma.studentResult.update({
+      where: { id },
+      data: { 
+        notes: body.notes !== undefined ? body.notes : undefined,
+        isPublished: body.isPublished !== undefined ? body.isPublished : undefined,
+      },
+    });
+    return { result: { ...result, _id: result.id } };
   }
 
   async deleteStudentResult(id: string) {
@@ -102,20 +92,50 @@ export class ReportsService {
   }
 
   async getReportCard(id: string) {
-    return this.prisma.reportCard.findUnique({ where: { id } });
+    const report = await this.prisma.reportCard.findUnique({
+      where: { id },
+      include: {
+        student: { select: { id: true, name: true, email: true } },
+        classroom: { select: { name: true } },
+      },
+    });
+    return { ...report, _id: report?.id };
   }
 
   async updateReportCard(id: string, body: any, userId: string) {
     return this.prisma.reportCard.update({
       where: { id },
       data: {
-        isApproved: body?.isApproved ?? undefined,
-        isPublished: body?.isPublished ?? undefined,
-        approvedById: body?.isApproved ? userId : undefined,
-        approvedAt: body?.isApproved ? new Date() : undefined,
-        publishedAt: body?.isPublished ? new Date() : undefined,
+        teacherRemarks: body.teacherRemarks,
+        principalRemarks: body.principalRemarks,
+        isApproved: body.isApproved ?? undefined,
+        isPublished: body.isPublished ?? undefined,
+        approvedById: body.isApproved ? userId : undefined,
+        approvedAt: body.isApproved ? new Date() : undefined,
+        publishedAt: body.isPublished ? new Date() : undefined,
       },
     });
   }
-}
 
+  async getReportCards(classId: string) {
+    return this.analyticsService.getReportCards(classId);
+  }
+
+  async publishReportCard(id: string, isPublished: boolean) {
+    return this.prisma.reportCard.update({
+      where: { id },
+      data: { 
+        isPublished,
+        publishedAt: isPublished ? new Date() : null 
+      }
+    });
+  }
+
+  async getStudentReportCards(studentId: string) {
+    return this.prisma.reportCard.findMany({
+      where: { studentId, isPublished: true },
+      include: { classroom: { select: { name: true } } },
+      orderBy: { generatedAt: 'desc' }
+    });
+  }
+}

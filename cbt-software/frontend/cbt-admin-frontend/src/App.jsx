@@ -6,12 +6,12 @@ import YoungEmeritusLogo from './components/YoungEmeritusLogo';
 import ChangePassword from './components/ChangePassword';
 import AppShell from './components/AppShell';
 
-// Lazy load pages that don't need wrapping
+// Lazy load pages
 const SecureLogin = lazy(() => import('./pages/SecureLogin'));
 const Signup = lazy(() => import('./pages/Signup'));
 const Landing = lazy(() => import('./pages/Landing'));
 
-// Import pages that need protection (not lazy)
+// Import pages that need protection
 import StudentTest from './pages/StudentTest';
 import AdminDashboard from './pages/AdminDashboard';
 import TeacherClasses from './pages/TeacherClasses';
@@ -19,8 +19,11 @@ import JoinSchool from './pages/JoinSchool';
 import CreateSchool from './pages/CreateSchool';
 import SchoolDashboard from './components/SchoolDashboard';
 import UserManagement from './components/UserManagement';
+import AuditLogs from './components/AuditLogs';
+import QuestionBank from './components/QuestionBank';
+import AttendanceTracker from './components/AttendanceTracker';
 
-// Wrapper components for protected routes - these handle auth checks internally
+// Wrapper components for protected routes
 function ProtectedJoinSchool() {
   return <ProtectedRoute><JoinSchool /></ProtectedRoute>;
 }
@@ -42,7 +45,17 @@ function ProtectedSchoolDashboard() {
 }
 
 function ProtectedUserManagement() {
-  return <ProtectedRoute allowedRoles={['admin']}><UserManagement /></ProtectedRoute>;
+  return <ProtectedRoute allowedRoles={['admin', 'superAdmin']}><UserManagement /></ProtectedRoute>;
+}
+
+function ProtectedAuditLogs() {
+  const token = JSON.parse(localStorage.getItem('auth'))?.token;
+  return <ProtectedRoute allowedRoles={['admin', 'superAdmin']}><AuditLogs token={token} /></ProtectedRoute>;
+}
+
+function ProtectedQuestionBank() {
+  const token = JSON.parse(localStorage.getItem('auth'))?.token;
+  return <ProtectedRoute allowedRoles={['admin', 'teacher', 'superAdmin']}><QuestionBank token={token} /></ProtectedRoute>;
 }
 
 function AppLayout() {
@@ -53,7 +66,6 @@ function AppLayout() {
   const isAuthPage = location.pathname === '/login' || location.pathname === '/signup';
   const useAppShell = isAuthenticated && !isLandingPage && !isAuthPage;
 
-  // Check if user needs to change password on mount and when user changes
   useEffect(() => {
     if (isAuthenticated && user?.mustChangePassword) {
       setShowPasswordChange(true);
@@ -61,7 +73,6 @@ function AppLayout() {
   }, [isAuthenticated, user?.mustChangePassword]);
 
   const handlePasswordChanged = () => {
-    // Clear the mustChangePassword flag by updating auth
     const auth = JSON.parse(localStorage.getItem('auth'));
     auth.user.mustChangePassword = false;
     localStorage.setItem('auth', JSON.stringify(auth));
@@ -69,7 +80,6 @@ function AppLayout() {
     setShowPasswordChange(false);
   };
 
-  // Get token from localStorage
   const token = JSON.parse(localStorage.getItem('auth'))?.token;
 
   if (isLoading) {
@@ -126,7 +136,6 @@ function AppLayout() {
   );
 }
 
-// Create router once - outside component to avoid recreating on every render
 const router = createBrowserRouter([
   {
     path: '/',
@@ -148,6 +157,10 @@ const router = createBrowserRouter([
           { path: 'join-school', element: <ProtectedJoinSchool /> },
           { path: 'student', element: <ProtectedStudentTest /> },
           { path: 'create-school', element: <ProtectedRoute><CreateSchool /></ProtectedRoute> },
+          { path: 'audit', element: <ProtectedAuditLogs /> },
+          { path: 'results', element: <ProtectedTeacherClasses /> },
+          { path: 'attendance', element: <ProtectedTeacherClasses /> },
+          { path: 'questions', element: <ProtectedQuestionBank /> },
         ],
       },
     ],

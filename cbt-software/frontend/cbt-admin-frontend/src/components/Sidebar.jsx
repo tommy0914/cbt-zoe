@@ -44,11 +44,11 @@ export default function Sidebar() {
         </div>
 
         {/* Academic Section */}
-        {(role === 'admin' || role === 'teacher' || role === 'student') && (
+        {(role === 'admin' || role === 'teacher' || role === 'superAdmin' || role === 'student') && (
           <div className="nav-section">
             <span className="nav-section-title">ACADEMIC</span>
             
-            {role !== 'student' && (
+            {role !== 'student' && role !== 'superAdmin' && (
               <NavLink to="/classes" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
                 🏫 Classes
               </NavLink>
@@ -62,7 +62,7 @@ export default function Sidebar() {
               </>
             )}
 
-            {(role === 'admin' || role === 'teacher') && (
+            {(role === 'admin' || role === 'teacher' || role === 'superAdmin') && (
               <NavLink to="/questions" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
                 📚 Question Bank
               </NavLink>

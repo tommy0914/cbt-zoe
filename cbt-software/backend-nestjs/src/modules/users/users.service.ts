@@ -23,6 +23,10 @@ export class UsersService {
         role: true,
         username: true,
         profilePicture: true,
+        staffId: true,
+        department: true,
+        level: true,
+        matricNumber: true,
       },
     });
   }
@@ -37,6 +41,8 @@ export class UsersService {
               { name: { contains: query, mode: 'insensitive' } },
               { email: { contains: query, mode: 'insensitive' } },
               { username: { contains: query, mode: 'insensitive' } },
+              { staffId: { contains: query, mode: 'insensitive' } },
+              { matricNumber: { contains: query, mode: 'insensitive' } },
             ],
           },
           schoolId ? { schoolId } : {},
@@ -51,6 +57,8 @@ export class UsersService {
         role: true,
         username: true,
         profilePicture: true,
+        level: true,
+        matricNumber: true,
       },
     });
   }
@@ -66,6 +74,10 @@ export class UsersService {
         username: true,
         profilePicture: true,
         schoolId: true,
+        staffId: true,
+        department: true,
+        level: true,
+        matricNumber: true,
       },
     });
   }
@@ -75,7 +87,13 @@ export class UsersService {
     if (typeof updates.name === 'string') data.name = updates.name.trim();
     if (typeof updates.email === 'string') data.email = updates.email.trim().toLowerCase();
     if (typeof updates.profilePicture === 'string') data.profilePicture = updates.profilePicture;
-    if (typeof updates.matricNumber === 'string') data.username = updates.matricNumber.trim().toLowerCase();
+    if (typeof updates.staffId === 'string') data.staffId = updates.staffId.trim();
+    if (typeof updates.department === 'string') data.department = updates.department.trim();
+    if (typeof updates.level === 'string') data.level = updates.level.trim();
+    if (typeof updates.matricNumber === 'string') {
+      data.matricNumber = updates.matricNumber.trim();
+      data.username = updates.matricNumber.trim();
+    }
 
     return this.prisma.user.update({
       where: { id },
@@ -87,6 +105,10 @@ export class UsersService {
         role: true,
         username: true,
         profilePicture: true,
+        staffId: true,
+        department: true,
+        level: true,
+        matricNumber: true,
       },
     });
   }

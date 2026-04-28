@@ -49,10 +49,13 @@ export class AuthService {
   }
 
   async login(email: string, pass: string) {
-    const loginIdentifier = email?.toLowerCase().trim();
+    const loginIdentifier = email?.trim(); // Don't lowercase yet, as usernames/matric could be case-sensitive depending on setup
     const user = await this.prisma.user.findFirst({
       where: {
-        OR: [{ email: loginIdentifier }, { username: loginIdentifier }],
+        OR: [
+          { email: loginIdentifier.toLowerCase() }, 
+          { username: loginIdentifier }
+        ],
       },
       include: { schoolRoles: true },
     });

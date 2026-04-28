@@ -31,7 +31,7 @@ export class EnrollmentController {
   @Get('requests')
   async getRequests(@Query('schoolId') schoolId: string, @Req() req: any) {
     const sId = schoolId || req.user.schoolId;
-    const requests = await this.enrollmentService.getPendingRequests(sId);
+    const requests = await this.enrollmentService.getPendingRequests(sId || undefined);
     return {
       requests: requests.map((r: any) => ({
         ...r,
