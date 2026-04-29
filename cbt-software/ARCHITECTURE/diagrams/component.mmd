@@ -1,0 +1,24 @@
+flowchart TB
+  subgraph Frontend
+    FE[Admin UI]
+    CP[Command Palette]
+    AS[AppShell]
+  end
+
+  subgraph Backend
+    API[HTTP API (NestJS)]
+    AUTH[Auth Module (JWT)]
+    PRISMA[Prisma Client]
+    NOTIF[Notifications / WebSockets]
+    FILES[File Uploads Service]
+    JOBS[Background Jobs]
+  end
+
+  FE --> API
+  API --> PRISMA
+  API --> AUTH
+  API --> FILES
+  API --> NOTIF
+  API --> JOBS
+  JOBS --> PRISMA
+  NOTIF --> FE

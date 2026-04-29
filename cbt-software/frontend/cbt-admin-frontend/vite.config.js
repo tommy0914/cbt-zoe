@@ -40,4 +40,19 @@ export default defineConfig({
       },
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('recharts')) return 'vendor-recharts';
+            return 'vendor';
+          }
+          if (id.includes('src/components/AnalyticsDashboard') || id.includes('AnalyticsDashboard')) return 'analytics';
+          if (id.includes('src/components/EnrollmentManagement') || id.includes('EnrollmentManagement')) return 'enrollment';
+          if (id.includes('src/components/UserManagement') || id.includes('UserManagement')) return 'admin-modules';
+        }
+      }
+    }
+  }
 })

@@ -1,0 +1,80 @@
+openapi: 3.0.3
+info:
+  title: CBT Platform API (skeleton)
+  version: '1.0.0'
+paths:
+  /api/auth/login:
+    post:
+      summary: Login and receive JWT
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: JWT token
+  /api/tests:
+    get:
+      summary: List tests for a classroom
+      parameters:
+        - in: query
+          name: classId
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Array of tests
+    post:
+      summary: Create a test
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Test'
+      responses:
+        '201':
+          description: Created
+  /api/tests/{id}:
+    get:
+      summary: Get test by id
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Test
+  /api/attempts:
+    post:
+      summary: Start an attempt
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                testId:
+                  type: string
+      responses:
+        '201':
+          description: Attempt created
+components:
+  schemas:
+    Test:
+      type: object
+      properties:
+        title:
+          type: string
+        durationMinutes:
+          type: integer

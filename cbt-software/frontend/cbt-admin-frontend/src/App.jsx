@@ -13,12 +13,12 @@ const Landing = lazy(() => import('./pages/Landing'));
 
 // Import pages that need protection
 import StudentTest from './pages/StudentTest';
-import AdminDashboard from './pages/AdminDashboard';
-import TeacherClasses from './pages/TeacherClasses';
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
+const TeacherClasses = lazy(() => import('./pages/TeacherClasses'));
 import JoinSchool from './pages/JoinSchool';
 import CreateSchool from './pages/CreateSchool';
 import SchoolDashboard from './components/SchoolDashboard';
-import UserManagement from './components/UserManagement';
+const UserManagement = lazy(() => import('./components/UserManagement'));
 import AuditLogs from './components/AuditLogs';
 import QuestionBank from './components/QuestionBank';
 import AttendanceTracker from './components/AttendanceTracker';

@@ -1,0 +1,17 @@
+flowchart LR
+  User[Users (Students / Teachers / Admins)]
+  Frontend[Admin Frontend (React/Vite)]
+  API[Backend API (NestJS)]
+  DB[(Postgres)]
+  Storage[(File Storage)]
+  Auth[(Auth: JWT)]
+  Worker[(Background Jobs / Workers)]
+
+  User -->|browser| Frontend
+  Frontend -->|HTTP / REST / WebSocket| API
+  API -->|ORM (Prisma)| DB
+  API -->|uploads| Storage
+  API -->|issue/verify tokens| Auth
+  API -->|enqueue jobs| Worker
+  Worker --> DB
+  Worker --> Storage

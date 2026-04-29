@@ -1,0 +1,1354 @@
+openapi: 3.0.0
+paths:
+  /:
+    get:
+      operationId: AppController_getHello
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      tags:
+        - App
+  /users/search:
+    get:
+      operationId: UsersController_search
+      parameters:
+        - name: email
+          required: true
+          in: query
+          schema:
+            type: string
+        - name: q
+          required: true
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: &ref_0
+        - Users
+  /users/{id}:
+    get:
+      operationId: UsersController_findOne
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *ref_0
+    put:
+      operationId: UsersController_update
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *ref_0
+  /auth/login:
+    post:
+      operationId: AuthController_login
+      parameters: []
+      responses:
+        '201':
+          description: ''
+      tags: &ref_1
+        - Auth
+  /auth/register:
+    post:
+      operationId: AuthController_register
+      parameters: []
+      responses:
+        '201':
+          description: ''
+      tags: *ref_1
+  /auth/change-password:
+    post:
+      operationId: AuthController_changePassword
+      parameters: []
+      responses:
+        '201':
+          description: ''
+      tags: *ref_1
+  /auth/verify-token:
+    post:
+      operationId: AuthController_verifyToken
+      parameters: []
+      responses:
+        '201':
+          description: ''
+      tags: *ref_1
+  /auth/logout:
+    post:
+      operationId: AuthController_logout
+      parameters: []
+      responses:
+        '201':
+          description: ''
+      tags: *ref_1
+  /auth/refresh:
+    post:
+      operationId: AuthController_refresh
+      parameters: []
+      responses:
+        '201':
+          description: ''
+      tags: *ref_1
+  /schools:
+    post:
+      operationId: SchoolsController_create
+      parameters: []
+      responses:
+        '201':
+          description: ''
+      tags: &ref_2
+        - Schools
+    get:
+      operationId: SchoolsController_findAll
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      tags: *ref_2
+  /schools/create-direct:
+    post:
+      operationId: SchoolsController_createDirect
+      parameters: []
+      responses:
+        '201':
+          description: ''
+      tags: *ref_2
+  /schools/{id}/join:
+    post:
+      operationId: SchoolsController_join
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '201':
+          description: ''
+      tags: *ref_2
+  /schools/{id}:
+    get:
+      operationId: SchoolsController_findOne
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *ref_2
+  /questions/upload:
+    post:
+      operationId: QuestionsController_uploadFile
+      parameters: []
+      responses:
+        '201':
+          description: ''
+      tags: &ref_3
+        - Questions
+  /questions:
+    post:
+      operationId: QuestionsController_create
+      parameters: []
+      responses:
+        '201':
+          description: ''
+      tags: *ref_3
+    get:
+      operationId: QuestionsController_findAll
+      parameters:
+        - name: schoolId
+          required: true
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *ref_3
+  /questions/subjects:
+    get:
+      operationId: QuestionsController_getSubjects
+      parameters:
+        - name: schoolId
+          required: true
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *ref_3
+  /questions/by-subject/{subject}:
+    get:
+      operationId: QuestionsController_findBySubject
+      parameters:
+        - name: subject
+          required: true
+          in: path
+          schema:
+            type: string
+        - name: schoolId
+          required: true
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *ref_3
+  /questions/{id}:
+    get:
+      operationId: QuestionsController_findOne
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *ref_3
+    patch:
+      operationId: QuestionsController_update
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *ref_3
+    delete:
+      operationId: QuestionsController_remove
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *ref_3
+  /tests:
+    post:
+      operationId: TestsController_create
+      parameters: []
+      responses:
+        '201':
+          description: ''
+      tags: &ref_4
+        - Tests
+    get:
+      operationId: TestsController_findAll
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      tags: *ref_4
+  /tests/list:
+    get:
+      operationId: TestsController_list
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      tags: *ref_4
+  /tests/search:
+    get:
+      operationId: TestsController_search
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      tags: *ref_4
+  /tests/start/{id}:
+    get:
+      operationId: TestsController_start
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *ref_4
+  /tests/submit:
+    post:
+      operationId: TestsController_submit
+      parameters: []
+      responses:
+        '201':
+          description: ''
+      tags: *ref_4
+  /tests/{id}:
+    put:
+      operationId: TestsController_update
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *ref_4
+    get:
+      operationId: TestsController_findOne
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *ref_4
+  /tests/{id}/exceptions:
+    post:
+      operationId: TestsController_createException
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '201':
+          description: ''
+      tags: *ref_4
+  /attempts/start:
+    post:
+      operationId: AttemptsController_start
+      parameters: []
+      responses:
+        '201':
+          description: ''
+      tags: &ref_5
+        - Attempts
+  /attempts/{id}/response:
+    post:
+      operationId: AttemptsController_submitResponse
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '201':
+          description: ''
+      tags: *ref_5
+  /attempts/{id}/submit:
+    post:
+      operationId: AttemptsController_submit
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '201':
+          description: ''
+      tags: *ref_5
+  /attempts/{id}:
+    get:
+      operationId: AttemptsController_findOne
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *ref_5
+    delete:
+      operationId: AttemptsController_remove
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *ref_5
+  /analytics/generate/{classId}:
+    post:
+      operationId: AnalyticsController_generate
+      parameters:
+        - name: classId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '201':
+          description: ''
+      tags: &ref_6
+        - Analytics
+  /analytics/report:
+    get:
+      operationId: AnalyticsController_getReport
+      parameters:
+        - name: classId
+          required: true
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *ref_6
+  /analytics/class-performance/{classId}:
+    get:
+      operationId: AnalyticsController_getClassPerformance
+      parameters:
+        - name: classId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *ref_6
+  /analytics/class-insights/{classId}:
+    get:
+      operationId: AnalyticsController_getClassInsights
+      parameters:
+        - name: classId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *ref_6
+  /analytics/question-difficulty:
+    get:
+      operationId: AnalyticsController_getQuestionDifficulty
+      parameters:
+        - name: schoolId
+          required: true
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *ref_6
+  /analytics/generate-report-card/{studentId}/{classId}:
+    post:
+      operationId: AnalyticsController_generateReportCard
+      parameters:
+        - name: studentId
+          required: true
+          in: path
+          schema:
+            type: string
+        - name: classId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '201':
+          description: ''
+      tags: *ref_6
+  /analytics/report-cards/{classId}:
+    get:
+      operationId: AnalyticsController_getReportCards
+      parameters:
+        - name: classId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *ref_6
+  /announcements:
+    post:
+      operationId: AnnouncementsController_create
+      parameters: []
+      responses:
+        '201':
+          description: ''
+      tags: &ref_7
+        - Announcements
+  /announcements/{classId}:
+    get:
+      operationId: AnnouncementsController_findByClass
+      parameters:
+        - name: classId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *ref_7
+  /attendance/{classId}:
+    post:
+      operationId: AttendanceController_takeAttendance
+      parameters:
+        - name: classId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '201':
+          description: ''
+      tags: &ref_8
+        - Attendance
+    get:
+      operationId: AttendanceController_getAttendance
+      parameters:
+        - name: classId
+          required: true
+          in: path
+          schema:
+            type: string
+        - name: date
+          required: true
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *ref_8
+  /attendance/{classId}/{date}:
+    get:
+      operationId: AttendanceController_getAttendanceByPath
+      parameters:
+        - name: classId
+          required: true
+          in: path
+          schema:
+            type: string
+        - name: date
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *ref_8
+  /classes:
+    post:
+      operationId: ClassroomsController_create
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateClassroomDto'
+      responses:
+        '201':
+          description: ''
+      tags: &ref_9
+        - Classrooms
+    get:
+      operationId: ClassroomsController_findAll
+      parameters:
+        - name: schoolId
+          required: true
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *ref_9
+  /classes/{id}:
+    get:
+      operationId: ClassroomsController_findOne
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *ref_9
+    delete:
+      operationId: ClassroomsController_remove
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *ref_9
+  /classes/{id}/teacher:
+    post:
+      operationId: ClassroomsController_assignTeacher
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignTeacherDto'
+      responses:
+        '201':
+          description: ''
+      tags: *ref_9
+  /classes/{id}/members:
+    post:
+      operationId: ClassroomsController_addMember
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddMemberDto'
+      responses:
+        '201':
+          description: ''
+      tags: *ref_9
+  /classes/{id}/subjects:
+    post:
+      operationId: ClassroomsController_addSubject
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '201':
+          description: ''
+      tags: *ref_9
+  /classes/{id}/subjects/{subject}:
+    delete:
+      operationId: ClassroomsController_removeSubject
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+        - name: subject
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *ref_9
+  /classes/{id}/members/{memberId}:
+    delete:
+      operationId: ClassroomsController_removeMember
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+        - name: memberId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *ref_9
+  /classes/{id}/students:
+    get:
+      operationId: ClassroomsController_getStudents
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *ref_9
+  /enrollment/request:
+    post:
+      operationId: EnrollmentController_createRequest
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateEnrollmentRequestDto'
+      responses:
+        '201':
+          description: ''
+      tags: &ref_10
+        - Enrollment
+  /enrollment/approve/{id}:
+    post:
+      operationId: EnrollmentController_approve
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '201':
+          description: ''
+      tags: *ref_10
+  /enrollment/reject/{id}:
+    post:
+      operationId: EnrollmentController_reject
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HandleEnrollmentRequestDto'
+      responses:
+        '201':
+          description: ''
+      tags: *ref_10
+  /enrollment/requests:
+    get:
+      operationId: EnrollmentController_getRequests
+      parameters:
+        - name: schoolId
+          required: true
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *ref_10
+  /enrollment/available-classes:
+    get:
+      operationId: EnrollmentController_getAvailableClasses
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      tags: *ref_10
+  /enrollment/bulk/{classId}:
+    post:
+      operationId: EnrollmentController_bulkEnroll
+      parameters:
+        - name: classId
+          required: true
+          in: path
+          schema:
+            type: string
+        - name: schoolId
+          required: true
+          in: query
+          schema:
+            type: string
+      responses:
+        '201':
+          description: ''
+      tags: *ref_10
+  /enrollment/bulk-enroll:
+    post:
+      operationId: EnrollmentController_bulkEnrollUpload
+      parameters:
+        - name: schoolId
+          required: true
+          in: query
+          schema:
+            type: string
+      responses:
+        '201':
+          description: ''
+      tags: *ref_10
+  /materials/upload:
+    post:
+      operationId: MaterialsController_uploadFile
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateMaterialDto'
+      responses:
+        '201':
+          description: ''
+      tags: &ref_11
+        - Materials
+  /materials/class/{classId}:
+    get:
+      operationId: MaterialsController_findByClass
+      parameters:
+        - name: classId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *ref_11
+  /materials/{id}:
+    get:
+      operationId: MaterialsController_findOne
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *ref_11
+    delete:
+      operationId: MaterialsController_remove
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *ref_11
+  /messaging/class/{classId}:
+    get:
+      operationId: MessagingController_getMessagesByClass
+      parameters:
+        - name: classId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: &ref_12
+        - Messaging
+  /messaging/direct/{receiverId}:
+    get:
+      operationId: MessagingController_getDirectMessages
+      parameters:
+        - name: receiverId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *ref_12
+  /quickwins/announcements/create:
+    post:
+      operationId: QuickWinsController_createAnnouncement
+      parameters: []
+      responses:
+        '201':
+          description: ''
+      tags: &ref_13
+        - QuickWins
+  /quickwins/announcements/class/{classId}:
+    get:
+      operationId: QuickWinsController_getAnnouncements
+      parameters:
+        - name: classId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *ref_13
+  /quickwins/leaderboard/class/{classId}:
+    get:
+      operationId: QuickWinsController_getLeaderboard
+      parameters:
+        - name: classId
+          required: true
+          in: path
+          schema:
+            type: string
+        - name: limit
+          required: true
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *ref_13
+  /quickwins/leaderboard/student/{studentId}/class/{classId}:
+    get:
+      operationId: QuickWinsController_getStudentRank
+      parameters:
+        - name: studentId
+          required: true
+          in: path
+          schema:
+            type: string
+        - name: classId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *ref_13
+  /quickwins/certificates/student/{studentId}:
+    get:
+      operationId: QuickWinsController_getStudentCertificates
+      parameters:
+        - name: studentId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *ref_13
+  /quickwins/certificates/{id}:
+    get:
+      operationId: QuickWinsController_getCertificate
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *ref_13
+  /quickwins/certificates/{id}/send:
+    post:
+      operationId: QuickWinsController_sendCertificate
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '201':
+          description: ''
+      tags: *ref_13
+  /quickwins/export/test-results/{testId}:
+    get:
+      operationId: QuickWinsController_exportTestResults
+      parameters:
+        - name: testId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *ref_13
+  /quickwins/export/class-report/{classId}:
+    get:
+      operationId: QuickWinsController_exportClassReport
+      parameters:
+        - name: classId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *ref_13
+  /quickwins/export/leaderboard/{classId}:
+    get:
+      operationId: QuickWinsController_exportLeaderboard
+      parameters:
+        - name: classId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *ref_13
+  /admin/teachers:
+    post:
+      operationId: AdminController_createTeacher
+      parameters: []
+      responses:
+        '201':
+          description: ''
+      tags: &ref_14
+        - Admin
+  /admin/students:
+    post:
+      operationId: AdminController_createStudent
+      parameters: []
+      responses:
+        '201':
+          description: ''
+      tags: *ref_14
+  /admin/reset-password:
+    post:
+      operationId: AdminController_resetPassword
+      parameters: []
+      responses:
+        '201':
+          description: ''
+      tags: *ref_14
+  /admin/promote-student:
+    post:
+      operationId: AdminController_promoteStudent
+      parameters: []
+      responses:
+        '201':
+          description: ''
+      tags: *ref_14
+  /admin/assign-teacher:
+    post:
+      operationId: AdminController_assignTeacher
+      parameters: []
+      responses:
+        '201':
+          description: ''
+      tags: *ref_14
+  /admin/audit:
+    get:
+      operationId: AdminController_getAudit
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      tags: *ref_14
+  /reports/overall-performance:
+    get:
+      operationId: ReportsController_overallPerformance
+      parameters:
+        - name: schoolId
+          required: true
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: &ref_15
+        - Reports
+  /reports/question-difficulty:
+    get:
+      operationId: ReportsController_questionDifficulty
+      parameters:
+        - name: schoolId
+          required: true
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *ref_15
+  /reports/student-results/{classId}:
+    get:
+      operationId: ReportsController_getStudentResults
+      parameters:
+        - name: classId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *ref_15
+  /reports/generate-student-result/{studentId}/{classId}:
+    post:
+      operationId: ReportsController_generateStudentResult
+      parameters:
+        - name: studentId
+          required: true
+          in: path
+          schema:
+            type: string
+        - name: classId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '201':
+          description: ''
+      tags: *ref_15
+  /reports/student-result/{id}:
+    get:
+      operationId: ReportsController_getStudentResult
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *ref_15
+    put:
+      operationId: ReportsController_updateStudentResult
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *ref_15
+    delete:
+      operationId: ReportsController_deleteStudentResult
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *ref_15
+  /reports/generate-report-card/{studentId}/{classId}:
+    post:
+      operationId: ReportsController_generateReportCard
+      parameters:
+        - name: studentId
+          required: true
+          in: path
+          schema:
+            type: string
+        - name: classId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '201':
+          description: ''
+      tags: *ref_15
+  /reports/report-card/{id}:
+    get:
+      operationId: ReportsController_getReportCard
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *ref_15
+    put:
+      operationId: ReportsController_updateReportCard
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *ref_15
+  /reports/report-cards/{classId}:
+    get:
+      operationId: ReportsController_getReportCards
+      parameters:
+        - name: classId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *ref_15
+  /reports/report-card/{id}/publish:
+    put:
+      operationId: ReportsController_publishReportCard
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *ref_15
+  /reports/student/report-cards:
+    get:
+      operationId: ReportsController_getStudentReportCards
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      tags: *ref_15
+  /calendar/session:
+    post:
+      operationId: CalendarController_createSession
+      parameters: []
+      responses:
+        '201':
+          description: ''
+      tags: &ref_16
+        - Calendar
+  /calendar/sessions:
+    get:
+      operationId: CalendarController_getSessions
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      tags: *ref_16
+  /calendar/current:
+    get:
+      operationId: CalendarController_getCurrent
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      tags: *ref_16
+  /calendar/term/{id}/open:
+    put:
+      operationId: CalendarController_openTerm
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *ref_16
+  /calendar/term/{id}/close:
+    put:
+      operationId: CalendarController_closeTerm
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *ref_16
+  /calendar/session/{id}/activate:
+    put:
+      operationId: CalendarController_activateSession
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      tags: *ref_16
+info:
+  title: CBT Platform API
+  description: Runtime generated OpenAPI document
+  version: '1.0'
+  contact: {}
+tags: []
+servers: []
+components:
+  securitySchemes:
+    bearer:
+      scheme: bearer
+      bearerFormat: JWT
+      type: http
+  schemas:
+    CreateClassroomDto:
+      type: object
+      properties: {}
+    AssignTeacherDto:
+      type: object
+      properties: {}
+    AddMemberDto:
+      type: object
+      properties: {}
+    CreateEnrollmentRequestDto:
+      type: object
+      properties: {}
+    HandleEnrollmentRequestDto:
+      type: object
+      properties: {}
+    CreateMaterialDto:
+      type: object
+      properties: {}

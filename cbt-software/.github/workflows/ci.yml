@@ -1,0 +1,72 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  backend-tests:
+    name: Backend tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend-nestjs
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Cache backend node modules
+        uses: actions/cache@v4
+        with:
+          path: backend-nestjs/node_modules
+          key: ${{ runner.os }}-backend-${{ hashFiles('backend-nestjs/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-backend-
+
+      - name: Install backend dependencies
+        run: npm ci
+
+      - name: Run backend tests
+        env:
+          NODE_OPTIONS: --max-old-space-size=2048
+          DATABASE_URL: 'postgres://ci:ci@localhost:5432/ci_db'
+          JWT_SECRET: 'ci-test-secret-please-change'
+          NODE_ENV: 'test'
+        run: npm test
+
+  frontend-build:
+    name: Frontend lint & build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend/cbt-admin-frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Cache frontend node modules
+        uses: actions/cache@v4
+        with:
+          path: frontend/cbt-admin-frontend/node_modules
+          key: ${{ runner.os }}-frontend-${{ hashFiles('frontend/cbt-admin-frontend/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-frontend-
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        run: npm run lint || true
+
+      - name: Build frontend
+        run: npm run build

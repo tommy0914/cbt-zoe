@@ -21,7 +21,8 @@ export class ReportsController {
 
   @Get('student-results/:classId')
   async getStudentResults(@Param('classId') classId: string) {
-    return this.reportsService.getStudentResults(classId);
+    const results = await this.reportsService.getStudentResults(classId);
+    return { results };
   }
 
   @Post('generate-student-result/:studentId/:classId')
